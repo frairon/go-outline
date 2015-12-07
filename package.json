@@ -1,0 +1,23 @@
+{
+  "name": "outline",
+  "main": "./lib/outline",
+  "version": "0.0.0",
+  "description": "Displays an outline of defined symbols",
+  "keywords": [
+  ],
+  "activationCommands": {
+    "atom-workspace": "outline:toggle"
+  },
+  "repository": "https://github.com/atom/outline",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=1.0.0 <2.0.0"
+  },
+  "dependencies": {
+    "atom-space-pen-views": "^2.0.0",
+    "ctags": "^3.0.0",
+    "underscore.string": "*",
+    "q": "^1.0.1",
+    "underscore-plus": "^1.0.0"
+  }
+}
