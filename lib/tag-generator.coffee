@@ -61,8 +61,9 @@ class TagGenerator
   generate: ->
     tags = {}
     packageRoot = @getPackageRoot()
-    command = path.join(packageRoot, 'vendor', "ctags-#{process.platform}")
-    defaultCtagsFile = path.join(packageRoot, 'lib', 'ctags-config')
+    console.log "packageRoot", packageRoot
+    command ="/usr/share/atom/resources/app.asar.unpacked/node_modules/symbols-view/vendor/ctags-linux" #path.join(packageRoot, 'vendor', "ctags-#{process.platform}")
+    defaultCtagsFile = path.join(packageRoot, 'lib', '.ctags')
     args = ["--options=#{defaultCtagsFile}", '--fields=+KS']
 
     if atom.config.get('symbols-view.useEditorGrammarAsCtagsLanguage')
@@ -70,7 +71,7 @@ class TagGenerator
         args.push("--language-force=#{language}")
 
     args.push('-nf', '-', @path)
-
+    console.log "executing", command, args
     new Promise (resolve) =>
       new BufferedProcess({
         command: command,

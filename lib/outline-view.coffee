@@ -1,12 +1,21 @@
 $ = $$ = fs = _s = Q = _ = null
 ResizableView = require './resizable-view'
-TagGenerator = require './tag-generator'
+#TagGenerator = require './tag-generator'
+
+Registry = require './registry'
 
 module.exports =
-class CoffeeNavigatorView extends ResizableView
-  @innerContent: ->
-    @div id: 'outline', class: 'padded', =>
-      @div outlet: 'tree'
+class OutlineView extends ResizableView
+  #@innerContent: ->
+  #  @div id: 'outline', class: 'padded', =>
+  #    @div outlet: 'tree'
+
+  @content: ->
+    @div class: 'tree-view-resizer tool-panel', 'data-show-on-right-side': atom.config.get('tree-view.showOnRightSide'), =>
+      @div class: 'tree-view-scroller order--center', outlet: 'scroller', =>
+        @div class: '', outlet: 'list'
+        #@ol class: 'tree-view full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
+      @div class: 'tree-view-resize-handle', outlet: 'resizeHandle'
 
   initialize: (serializeState) ->
     super serializeState
@@ -19,6 +28,8 @@ class CoffeeNavigatorView extends ResizableView
     atom.workspace.onDidChangeActivePaneItem (item) =>
       @onActivePaneChange(item)
 
+    @registry = new Registry(@list[0])
+
     @visible = localStorage.getItem('outlineStatus') == 'true'
     if @visible
       @show()
@@ -28,6 +39,7 @@ class CoffeeNavigatorView extends ResizableView
     @debug = false
 
     @fileWatcher = null
+
 
   serialize: ->
 
@@ -87,16 +99,48 @@ class CoffeeNavigatorView extends ResizableView
     if @debug
       console.log arguments
 
+
+  realParseCurrentFile: ->
+    # packageRegex = /^[\s]*package[\s]+([\w-_]+)/
+    # buffer = atom.workspace.getActiveTextEditor().getBuffer()
+    #
+    # for i in [0..buffer.getLineCount()]
+    #   packageMatch = packageRegex.exec buffer.lineForRow(i)
+    #   if packageMatch
+    #     @registry.packageForName(@getPath())
+    #     console.log(packageMatch)
+    #     console.log("package is", packageMatch[1])
+    #     break
+
+    fileInfo =
+      package: @getPath().replace(/^.*[\\\/]/, '')
+      filePath: @getPath()
+      entries:
+        typeX:
+          {}
+
+    fileInfo
+
   parseCurrentFile: ->
     _s ?= require 'underscore.string'
     $ ?= require('atom-space-pen-views').$
     $$ ?= require('atom-space-pen-views').$$
-    fs ?= require 'fs'
+
+    console.log "parsing new file", @getPath(),  @getScopeName()
+
+    #pkg = @registry.packageForName("asdf", @getPath())
+
+    fileInfo = @realParseCurrentFile()
+    @registry.displayPackage(fileInfo["package"])
+    @registry.packageForName(fileInfo["package"]).updateFileEntries(fileInfo)
+
+    return
 
     scrollTop = @scroller.scrollTop()
     @tree.empty()
 
     if _s.endsWith(@getPath(), '.coffee')
+      console.log "hello world"
       new TagGenerator(@getPath(), @getScopeName()).generate().done (tags) =>
         lastIdentation = -1
         for tag in tags
