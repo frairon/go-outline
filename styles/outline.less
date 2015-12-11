@@ -5,4 +5,15 @@
 @import "ui-variables";
 
 .outline {
+  .list-tree {
+  position: static;
+  }
+
+  .entry {
+    // This fixes #110, see that issue for more details
+    &:before {
+      content: '';
+      position: absolute;
+    }
+  }
 }

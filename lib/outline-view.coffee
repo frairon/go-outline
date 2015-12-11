@@ -115,9 +115,31 @@ class OutlineView extends ResizableView
     fileInfo =
       package: @getPath().replace(/^.*[\\\/]/, '')
       filePath: @getPath()
-      entries:
-        typeX:
-          {}
+      children:
+        Employee:
+          type:"struct"
+          dataType:"struct"
+          children:
+            getValue:
+              type:"function"
+              returnValue:[
+
+              ]
+              parameters:[
+                param1:
+                  dataType:"int"
+                  varadic:false
+              ]
+        foo:
+          type:'function'
+          returnValue:[
+            "int"
+            "string"
+          ]
+
+
+
+
 
     fileInfo
 
@@ -132,7 +154,7 @@ class OutlineView extends ResizableView
 
     fileInfo = @realParseCurrentFile()
     @registry.displayPackage(fileInfo["package"])
-    @registry.packageForName(fileInfo["package"]).updateFileEntries(fileInfo)
+    @registry.packageForName(fileInfo["package"]).updateFileEntries(fileInfo.filePath, fileInfo?.children)
 
     return
 

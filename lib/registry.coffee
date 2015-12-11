@@ -7,7 +7,7 @@ _ = require 'underscore-plus'
 # {repoForPath} = require './helpers'
 #realpathCache = {}
 
-Package = require './package'
+PackageElement = require './package'
 
 module.exports =
 class Registry
@@ -19,19 +19,17 @@ class Registry
 
   packageForName:(name) ->
     if !@entries[name]?
-      pkg = new Package()
+      pkg = new PackageElement()
       pkg.initialize(name)
       @entries[name] = pkg
 
     return @entries[name]
 
   displayPackage:(name)->
-    # remove all children
-    console.log @container
 
-
-    if @currentPackage? && @currentPackage.packageName != name
-      @currentPackage.destroy()
+    if @currentPackage?.packageName != name
+      if @currentPackage?
+        @container.removeChild(@currentPackage)
       @currentPackage = @packageForName(name)
 
       @container.appendChild(@currentPackage)

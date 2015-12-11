@@ -7,13 +7,15 @@ _ = require 'underscore-plus'
 # {repoForPath} = require './helpers'
 #realpathCache = {}
 
+EntryElement = require './entry'
+
 #module.exports =
 class Package extends HTMLElement
 
   initialize: (@packageName) ->
 
     #@name = @path.replace(/^.*[\\\/]/, '')
-    @classList.add('directory', 'entry',  'list-nested-item')#,  'collapsed')
+    @classList.add('entry',  'list-nested-item')#,  'collapsed')
     @header = document.createElement('div')
     @packageNameElem = document.createElement('span')
     @packageNameElem.classList.add('name', 'icon', 'icon-file-directory')
@@ -28,7 +30,18 @@ class Package extends HTMLElement
     @entries.classList.add('entries', 'list-tree')
     @appendChild(@entries)
 
-  updateFileEntries: (fileInfo) ->
+    @children = {}
+
+  updateFileEntries: (fileName, entries) ->
+    for entryName, entryValues of entries
+      console.log entryName, entryValues
+      if !@children[entryName]?
+        child = new EntryElement().initialize(entryName)
+        @children[entryName] = child
+        @entries.appendChild(child)
+      console.log entryValues.children
+      @children[entryName].updateFileEntries(fileName, entryValues?.children)
+
 
 
 
