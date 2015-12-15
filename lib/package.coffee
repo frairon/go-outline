@@ -1,18 +1,25 @@
 path = require 'path'
+fs = require 'fs'
 _ = require 'underscore-plus'
+
+{BufferedProcess} = require 'atom'
+
 # {CompositeDisposable, Emitter} = require 'event-kit'
 
 #PathWatcher = require 'pathwatcher'
 #File = require './file'
 # {repoForPath} = require './helpers'
 #realpathCache = {}
+PathWatcher = require 'pathwatcher'
+
+helpers = require './helpers'
 
 EntryElement = require './entry'
 
 #module.exports =
 class Package extends HTMLElement
 
-  initialize: (@packageName) ->
+  initialize: (@packagepath) ->
 
     #@name = @path.replace(/^.*[\\\/]/, '')
     @classList.add('entry',  'list-nested-item')#,  'collapsed')
@@ -32,6 +39,69 @@ class Package extends HTMLElement
 
     @children = {}
 
+    console.log "creating Package, watching path", @packagepath
+    # create watches for the directory
+    # NOT working as expected, don't do it for now.
+    #@watch()
+
+    @fullReparse()
+
+  watch: ->
+    console.log "watched paths", PathWatcher.getWatchedPaths()
+    try
+      @watchSubscription ?= PathWatcher.watch @packagepath, (event, path) =>
+        console.log event, path
+        switch event
+          when 'change' then @dirChanged(path)
+          when 'delete' then @destroy()
+
+      console.log "watching path worked?", @watchSubscription
+
+  refreshFile: (file) ->
+    console.log "refreshing file", file
+
+  dirChanged: (oldPath, newPath) ->
+    console.log "file has been created or deleted", oldPath, newPath
+
+  fullReparse: ->
+    console.log "reparsing directory", @packagepath
+    try
+      names = fs.readdirSync(@packagepath)
+    catch error
+      console.log "error reading directory", error
+      names = []
+
+    console.log "found names in directory", names
+    files = []
+    for name in names
+
+      continue if !name.endsWith '.go'
+
+      fullPath = path.join(@packagepath, name)
+      console.log("parsing file", fullPath)
+      stat = fs.lstatSyncNoException(fullPath)
+      symlink = stat.isSymbolicLink?()
+      stat = fs.statSyncNoException(fullPath) if symlink
+      continue if stat.isDirectory?()
+      continue if !stat.isFile?()
+      @reparseFile(fullPath)
+
+  reparseFile: (filepath) ->
+    out = []
+    promise = new Promise((resolve, reject) =>
+      new BufferedProcess({
+        command: '/home/franz/work/outline/outline-parser/outline-parser',
+        args: ['-f', filepath],
+        stdout: (data) =>
+          out.push(data)
+
+        exit: (code) =>
+          resolve(code)
+      })
+    ).then (code) ->
+      console.log "parser finished", code
+      console.log "output:", out.join("\n")
+
   updateFileEntries: (fileName, entries) ->
     for entryName, entryValues of entries
       console.log entryName, entryValues
@@ -42,8 +112,13 @@ class Package extends HTMLElement
       console.log entryValues.children
       @children[entryName].updateFileEntries(fileName, entryValues?.children)
 
-
-
+  unwatch: ->
+    if @watchSubscription?
+      @watchSubscription.close()
+      @watchSubscription = null
+      console.log "cancelling path subscription"
+  destroy: ->
+    @unwatch
 
 
 PackageElement = document.registerElement('outline-package', prototype: Package.prototype, extends: 'div')
