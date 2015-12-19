@@ -22,13 +22,15 @@ class Package extends HTMLElement
   initialize: (@packagepath) ->
 
     #@name = @path.replace(/^.*[\\\/]/, '')
+
+    @initialPackageName = "parsing package..."
     @classList.add('entry',  'list-nested-item')#,  'collapsed')
     @header = document.createElement('div')
     @packageNameElem = document.createElement('span')
     @packageNameElem.classList.add('name', 'icon', 'icon-file-directory')
-    @packageNameElem.title=@packageName
-    packageNameTextNode = document.createTextNode(@packageName)
-    @packageNameElem.appendChild(packageNameTextNode)
+    @packageNameElem.title= @initialPackageName
+    @packageNameTextNode = document.createTextNode(@initialPackageName)
+    @packageNameElem.appendChild(@packageNameTextNode)
     @header.appendChild(@packageNameElem)
 
     @appendChild(@header)
@@ -86,21 +88,54 @@ class Package extends HTMLElement
       continue if !stat.isFile?()
       @reparseFile(fullPath)
 
-  reparseFile: (filepath) ->
+  reparseFile: (filePath)->
     out = []
     promise = new Promise((resolve, reject) =>
       new BufferedProcess({
         command: '/home/franz/work/outline/outline-parser/outline-parser',
-        args: ['-f', filepath],
+        args: ['-f', filePath],
         stdout: (data) =>
           out.push(data)
 
         exit: (code) =>
           resolve(code)
       })
-    ).then (code) ->
+    ).then (code) =>
       console.log "parser finished", code
-      console.log "output:", out.join("\n")
+      outlineTree = @makeOutlineTree(out.join("\n"))
+
+  makeOutlineTree: (parserOutput) ->
+    console.log "making outline from", parserOutput
+    parsed = JSON.parse parserOutput
+    file = parsed.Filename
+
+    if @packageNameTextNode.nodeValue == @initialPackageName
+      @packageNameTextNode.nodeValue = parsed.Packagename
+      @packageNameElem.title = parsed.Packagename
+    else
+      @packageNameTextNode.nodeValue ?= parsed.Packagename
+      @packageNameElem.title ?= parsed.Packagename
+
+
+    outlineTree = {}
+
+    for name, symbol of parsed.Entries
+
+      if symbol?.Receiver
+        parsed.Entries[symbol.Receiver].Children ?= {}
+        parsed.Entries[symbol.Receiver].Children[name] = symbol
+
+    for name, symbol of parsed.Entries
+      if !symbol?.Receiver
+        outlineTree[name] = symbol
+
+    console.log "transformed tree"
+    console.log outlineTree
+
+
+    # set package name if not set yet
+
+
 
   updateFileEntries: (fileName, entries) ->
     for entryName, entryValues of entries
