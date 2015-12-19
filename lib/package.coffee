@@ -24,7 +24,7 @@ class Package extends HTMLElement
     #@name = @path.replace(/^.*[\\\/]/, '')
 
     @initialPackageName = "parsing package..."
-    @classList.add('entry',  'list-nested-item')#,  'collapsed')
+    @classList.add('entry',  'list-tree', 'outline-tree', 'collapsed')#,  'collapsed')
     @header = document.createElement('div')
     @packageNameElem = document.createElement('span')
     @packageNameElem.classList.add('name', 'icon', 'icon-file-directory')
@@ -129,6 +129,7 @@ class Package extends HTMLElement
       if !symbol?.Receiver
         outlineTree[name] = symbol
 
+    @updateFileEntries(parsed.Filename, outlineTree)
     console.log "transformed tree"
     console.log outlineTree
 
@@ -145,7 +146,7 @@ class Package extends HTMLElement
         @children[entryName] = child
         @entries.appendChild(child)
       console.log entryValues.children
-      @children[entryName].updateFileEntries(fileName, entryValues?.children)
+      @children[entryName].updateFileEntries(fileName, entryValues?.Children)
 
   unwatch: ->
     if @watchSubscription?

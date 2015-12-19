@@ -10,14 +10,20 @@ _ = require 'underscore-plus'
 
 class Entry extends HTMLElement
   initialize:(entryName) ->
+
+    @header = document.createElement("div")
+    @header.classList.add("header", "list-item")
     text = document.createTextNode(entryName)
     content = document.createElement("span")
+    content.classList.add("name", "icon")
     content.appendChild(text)
-    @appendChild(content)
-    @classList.add('entry', 'list-item')
+    @header.appendChild(content)
+    @appendChild(@header)
+
+    @classList.add('entry', 'list-nested-item')
 
     @entries = document.createElement('ol')
-    @entries.classList.add('entries', 'list-tree')
+    @entries.classList.add('entries', 'list-tree', 'collapsed')
     @appendChild(@entries)
     @children = {}
 
