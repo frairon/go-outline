@@ -7,15 +7,16 @@ _ = require 'underscore-plus'
 # {repoForPath} = require './helpers'
 #realpathCache = {}
 
-PackageElement = require './package'
+EntryView = require './entry-view'
+Package = require './package'
 helpers = require './helpers'
 module.exports =
 class Registry
   constructor:(@container) ->
 
-    @entries = {}
+    @packageViews = {}
 
-    @currentPackage = null;
+    @currentPackageDir = null;
 
   refreshFile: (filePath)->
     console.log "refreshing file"
@@ -30,9 +31,9 @@ class Registry
       return
 
     # no package exists (i.e. hasn't been displayed yet), ignore it.
-    if !@entries[pkgDir]?
+    if !@packageViews[pkgDir]?
       return
-    @entries[pkgDir].refreshFile(file)
+    @packageViews[pkgDir].refreshFile(file)
 
   showPkgForFile:(filePath) ->
     pkgDir = helpers.dirname(filePath)
@@ -48,18 +49,20 @@ class Registry
       return
 
     # if package for folder does not exist, create it
-    if !@entries[pkgDir]?
-      pkg = new PackageElement()
-      pkg.initialize(pkgDir)
-      @entries[pkgDir] = pkg
+    if !@packageViews[pkgDir]?
+      pkgView = new EntryView()
+      pkg = new Package(pkgDir)
+      pkgView.initialize(pkg)
+
+      @packageViews[pkgDir] = pkgView
 
     # if the package has changed (or nothing displayed yet)
-    if @currentPackage?.packageName != name
+    if !@currentPackageDir? || @currentPackageDir != pkgDir
 
       # remove old displayed package if existed
-      if @currentPackage?
-        @container.removeChild(@currentPackage)
+      if @currentPackageDir?
+        @container.removeChild(list.childNodes[0])
 
       # set current, and display it.
-      @currentPackage = @entries[pkgDir]
-      @container.appendChild(@currentPackage)
+      @currentPackageDir = pkgDir
+      @container.appendChild(@packageViews[pkgDir])
