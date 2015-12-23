@@ -41,10 +41,12 @@ class Package extends HTMLElement
 
     @children = {}
 
+    @fileStats = {}
+
     console.log "creating Package, watching path", @packagepath
     # create watches for the directory
-    # NOT working as expected, don't do it for now.
-    #@watch()
+    # and rescan if anything changes.
+    @watch()
 
     @fullReparse()
 
@@ -52,12 +54,8 @@ class Package extends HTMLElement
     console.log "watched paths", PathWatcher.getWatchedPaths()
     try
       @watchSubscription ?= PathWatcher.watch @packagepath, (event, path) =>
-        console.log event, path
         switch event
-          when 'change' then @dirChanged(path)
-          when 'delete' then @destroy()
-
-      console.log "watching path worked?", @watchSubscription
+          when 'change' then @fullReparse()
 
   refreshFile: (file) ->
     console.log "refreshing file", file
@@ -80,12 +78,15 @@ class Package extends HTMLElement
       continue if !name.endsWith '.go'
 
       fullPath = path.join(@packagepath, name)
-      console.log("parsing file", fullPath)
-      stat = fs.lstatSyncNoException(fullPath)
-      symlink = stat.isSymbolicLink?()
-      stat = fs.statSyncNoException(fullPath) if symlink
+      stat = fs.statSync(fullPath)
+      stat = fs.lstatSync(fullPath) if stat.isSymbolicLink?()
       continue if stat.isDirectory?()
       continue if !stat.isFile?()
+
+      if fullPath of @fileStats && @fileStats[fullPath].mtime.getTime() >= stat.mtime.getTime()
+          continue
+
+      @fileStats[fullPath] = stat
       @reparseFile(fullPath)
 
   reparseFile: (filePath)->
@@ -101,11 +102,11 @@ class Package extends HTMLElement
           resolve(code)
       })
     ).then (code) =>
-      console.log "parser finished", code
+      #console.log "parser finished", code
       outlineTree = @makeOutlineTree(out.join("\n"))
 
   makeOutlineTree: (parserOutput) ->
-    console.log "making outline from", parserOutput
+    #console.log "making outline from", parserOutput
     parsed = JSON.parse parserOutput
     file = parsed.Filename
 
@@ -117,28 +118,50 @@ class Package extends HTMLElement
       @packageNameElem.title ?= parsed.Packagename
 
 
-    outlineTree = {}
+    entriesToRemove = _.pick(@children, (value, key, object) ->
+      return value.FileName == fileName && key not in _.keys(@entries)
+    )
+
 
     for name, symbol of parsed.Entries
+      symbol.FileName = file
 
-      if symbol?.Receiver
-        parsed.Entries[symbol.Receiver].Children ?= {}
-        parsed.Entries[symbol.Receiver].Children[name] = symbol
+      @updateChild(symbol)
 
-    for name, symbol of parsed.Entries
-      if !symbol?.Receiver
-        outlineTree[name] = symbol
+    @removeForFile(file, _.keys(entriesToRemove))
 
-    @updateFileEntries(parsed.Filename, outlineTree)
-    console.log "transformed tree"
-    console.log outlineTree
+  removeForFile: (fileName, removeNames) ->
+    console.log @children
+    for name, child of @children
+      console.log child
+      child.removeForFile(fileName, removeNames)
 
+      if child.FileName == fileName && name in removeNames
+        child.remove()
+        delete @children[name]
+
+  updateChild: (entry) ->
+    # if entry has a receiver
+    if entry?.Receiver?
+      @getOrCreateChild(entry.Receiver).updateChild(entry)
+    else
+      @getOrCreateChild(entry.Name).updateEntry(entry)
+
+  getOrCreateChild: (name) ->
+    if !@children[name]?
+      child = new EntryElement().initialize(name)
+      console.log child.removeForFile("asdf", "asdf")
+      @children[name] = child
+      @entries.appendChild(child)
+    else
+      child = @children[name]
+
+    child
 
     # set package name if not set yet
 
-
-
   updateFileEntries: (fileName, entries) ->
+
     for entryName, entryValues of entries
       console.log entryName, entryValues
       if !@children[entryName]?
@@ -148,6 +171,10 @@ class Package extends HTMLElement
       console.log entryValues.children
       @children[entryName].updateFileEntries(fileName, entryValues?.Children)
 
+    for entryName, entryValue of entriesToRemove
+      console.log "removing item", entryName, entryValue
+      @children[entryName].destroy()
+      delete @children[entryName]
   unwatch: ->
     if @watchSubscription?
       @watchSubscription.close()

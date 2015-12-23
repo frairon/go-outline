@@ -13,10 +13,10 @@ class Entry extends HTMLElement
 
     @header = document.createElement("div")
     @header.classList.add("header", "list-item")
-    text = document.createTextNode(entryName)
+    @textNode = document.createTextNode(entryName)
     content = document.createElement("span")
     content.classList.add("name", "icon")
-    content.appendChild(text)
+    content.appendChild(@textNode)
     @header.appendChild(content)
     @appendChild(@header)
 
@@ -27,19 +27,36 @@ class Entry extends HTMLElement
     @appendChild(@entries)
     @children = {}
 
+    @FileName = ""
+    @Name = entryName
+
     this
 
-  updateFileEntries:(fileName, entryData) ->
+  updateEntry:(entryData) ->
+    @textNode.nodeValue = entryData.Name
+    @Name = entryData.Name
+    @FileName = entryData.FileName
 
-    for entryName, entryValues of entryData
+  updateChild:(child)->
+    @getOrCreateChild(child.Name).updateEntry(child)
 
-      if !@children[entryName]?
-        child = new EntryElement().initialize(entryName)
-        @children[entryName] = child
-        @entries.appendChild(child)
+  getOrCreateChild: (name) ->
+    if !@children[name]?
+      child = new EntryElement().initialize(name)
+      @children[name] = child
+      @entries.appendChild(child)
+    else
+      child = @children[name]
 
-      @children[entryName].updateFileEntries(fileName, entryValues?.children)
+    child
 
+  removeForFile: (fileName, removeNames) ->
+    for name, child of @children
+      child.removeForFile(fileName, removeNames)
+
+      if child.FileName == fileName && name in removeNames && _.keys(child.children).length == 0
+        child.remove()
+        delete @children[name]
 
 EntryElement = document.registerElement('outline-entry', prototype: Entry.prototype, extends: 'li')
 module.exports = EntryElement

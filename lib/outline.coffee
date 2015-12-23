@@ -9,8 +9,12 @@ module.exports =
   outlineView: null
 
   activate: (state) ->
-    @outlineView = new OutlineView
-      #state.outlineViewState
+    @createView()
+
+  createView: ->
+    unless @outlineView?
+      @outlineView = new OutlineView(@state)
+    @outlineView
 
   deactivate: ->
     @outlineView.destroy()

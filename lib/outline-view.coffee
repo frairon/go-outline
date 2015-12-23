@@ -1,14 +1,10 @@
 $ = $$ = fs = _s = Q = _ = null
-ResizableView = require './resizable-view'
-#TagGenerator = require './tag-generator'
+
 {$, View} = require 'atom-space-pen-views'
 Registry = require './registry'
 
 module.exports =
-class OutlineView extends ResizableView
-  #@innerContent: ->
-  #  @div id: 'outline', class: 'padded', =>
-  #    @div outlet: 'tree'
+class OutlineView extends View
 
   @content: ->
     @div class: 'outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('outline.showOnRightSide'), =>
@@ -18,7 +14,6 @@ class OutlineView extends ResizableView
       @div class: 'outline-tree-resize-handle', outlet: 'resizeHandle'
 
   initialize: (serializeState) ->
-    super serializeState
 
     @showOnRightSide = atom.config.get('outline.showOnRightSide')
     atom.config.onDidChange 'outline.showOnRightSide', ({newValue}) =>
@@ -61,6 +56,7 @@ class OutlineView extends ResizableView
     e.stopPropagation()
 
   entryClicked: (e) ->
+    entry = console.log "entry clicked", e.currentTarget
 
   resizeToFitContent: ->
     @width(1) # Shrink to measure the minimum width of list
@@ -83,6 +79,7 @@ class OutlineView extends ResizableView
     editor.onDidDestroy -> editorSubscriptions.dispose()
 
   toggle: ->
+    console.log "toggling"
     if @isVisible()
       @detach()
     else
@@ -93,6 +90,15 @@ class OutlineView extends ResizableView
   show: ->
     @attach()
     @focus()
+
+  focus: ->
+    @list.focus()
+
+  detach: ->
+    @panel.destroy()
+    @panel = null
+
+
 
   attach: ->
     _ ?= require 'underscore-plus'
