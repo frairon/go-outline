@@ -54,6 +54,8 @@ class Registry
       pkg = new Package(pkgDir)
       pkgView.initialize(pkg)
 
+      pkg.fullReparse()
+
       @packageViews[pkgDir] = pkgView
 
     # if the package has changed (or nothing displayed yet)
@@ -61,7 +63,7 @@ class Registry
 
       # remove old displayed package if existed
       if @currentPackageDir?
-        @container.removeChild(list.childNodes[0])
+        @container.removeChild(@container.childNodes[0])
 
       # set current, and display it.
       @currentPackageDir = pkgDir

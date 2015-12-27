@@ -14,9 +14,7 @@ Entry = require './entry'
 module.exports = class Package extends Entry
   constructor: (@packagepath)->
     super("Unkown")
-    @updateEntry({type:"package"})
-    @emitter = new Emitter()
-    @subscriptions = new CompositeDisposable()
+    @updateEntry({ElemType:"package"})
 
     @fileStats = {}
 
@@ -24,7 +22,6 @@ module.exports = class Package extends Entry
     # and rescan if anything changes.
     @watch()
 
-    @fullReparse()
   watch: ->
     try
       @watchSubscription ?= PathWatcher.watch @packagepath, (event, path) =>
@@ -69,14 +66,14 @@ module.exports = class Package extends Entry
         exit: (code) =>
           resolve(code)
         })).then (code) =>
-          outlineTree = @makeOutlineTree(out.join("\n"))
+          @makeOutlineTree(out.join("\n"))
 
   makeOutlineTree: (parserOutput) ->
 
     parsed = JSON.parse parserOutput
     file = parsed.Filename
 
-    @updateEntry({Name:parsed.PackageName})
+    @updateEntry({Name:parsed.Packagename})
 
     # childrenToRemove = _.pick(@children, (value, key, object) ->
     #   return value.FileName == fileName && key not in _.keys(@children)
@@ -84,6 +81,7 @@ module.exports = class Package extends Entry
 
     for name, symbol of parsed.Entries
       symbol.FileName = file
+      console.log "updating child", name
       @updateChild(symbol)
 
 

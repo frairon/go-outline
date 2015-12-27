@@ -3,10 +3,11 @@
 EntryView = require './entry-view'
 
 module.exports = class Entry
+
   constructor: (@name)->
     @emitter = new Emitter()
     @subscriptions = new CompositeDisposable()
-    @parentIndex = => 100
+    @parentIndex = -> 100
     @children = []
     @childNames = []
 
@@ -17,15 +18,18 @@ module.exports = class Entry
 
 
   updateChild: (child) ->
+
     # if entry has a receiver
     if child?.Receiver?
-      @getOrCreateChild(child.Receiver).getOrCreateChild(child.name).updateEntry(child)
+      console.log "updating child", child.Name, child.Receiver
+      @getOrCreateChild(child.Receiver).getOrCreateChild(child.Name).updateEntry(child)
     else
       @getOrCreateChild(child.Name).updateEntry(child)
 
   getOrCreateChild: (name) ->
+    console.log "get or create child", name, "at", @name
     if !@hasChild(name)
-      addChild(new Entry(name))
+      @addChild(name, new Entry(name))
 
     @getChild(name)
 
@@ -37,6 +41,7 @@ module.exports = class Entry
       return @children[@childNames.indexOf name]
 
   addChild: (name, child) ->
+    console.log "add child", name, "to", @name
     @children.push child
     @childNames.push name
     child.parentIndex = =>
@@ -46,16 +51,13 @@ module.exports = class Entry
 
 
   updateEntry: (data)->
+
     @name = data?.Name
     @fileName = data?.FileName
     @fileLine = data?.Line
     @isPublic = data?.Public
     @type = data?.ElemType
     @emitter.emit("did-change")
-
-  addChildren: (children) ->
-    console.log "adding children", children
-    @emitter.emit("did-add-children", [])
 
   onDidDestroy: (callback)->
     @emitter.on('did-destroy', callback)

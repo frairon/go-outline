@@ -9,17 +9,16 @@ PathWatcher = require 'pathwatcher'
 
 helpers = require './helpers'
 
-class EntryView extends HTMLElement
+class EntryViewClass extends HTMLElement
 
   initialize: (@entry) ->
     @subscriptions = new CompositeDisposable()
     @subscribeToEntry()
 
-    @entry.name
-    @classList.add('entry',  'list-tree', 'outline-tree', 'collapsed')#,  'collapsed')
+    @classList.add('entry',  'list-nested-item', 'outline-tree', 'collapsed')#,  'collapsed')
     @header = document.createElement('div')
     @nameElem = document.createElement('span')
-    @nameElem.classList.add('name', 'icon')
+    @nameElem.classList.add('name', 'icon', 'icon-plus')
     @nameElem.title = @entry.name
     @nameTextNode = document.createTextNode(@entry.name)
     @nameElem.appendChild(@nameTextNode)
@@ -31,33 +30,29 @@ class EntryView extends HTMLElement
     @entries.classList.add('entries', 'list-tree')
     @appendChild(@entries)
 
-
+    console.log "view initialized"
   subscribeToEntry: ->
-
     @subscriptions.add @entry.onDidDestroy => @subscriptions.dispose()
-    @subscriptions.add @entrx.onDidChange(@onChanged)
-    @subscriptions.add @entry.onDidAddChildren(@onChildrenAdded)
-    @subscriptions.add @entry.onDidRemoveChildren(@onChildrenRemoved)
+    @subscriptions.add @entry.onDidChange =>
+      console.log "entry changed", @entry.name
+      @nameTextNode.nodeValue = @entry.name
+      @nameElem.title = @entry.name
+    @subscriptions.add @entry.onDidAddChildren (addedChildren) =>
+      #return unless @isExpanded
+      for entry in addedChildren
+        console.log "adding children", entry
+        numberOfEntries = @entries.children.length
+        view = new EntryView()
+        view.initialize(entry)
+        insertionIndex = entry.parentIndex()
+        console.log "insert entry at index", insertionIndex
+        if insertionIndex < numberOfEntries
+          @entries.insertBefore(view, @entries.children[insertionIndex])
+        else
+          @entries.appendChild(view)
 
+    @subscriptions.add @entry.onDidRemoveChildren (removedChildren)=>
+      console.log "children removed"
 
-  onChildrenRemoved: (removedChildren)->
-
-  onChanged:->
-    @nameTextNode.nodeValue = @entry.name
-    @nameElem.title = @entry.name
-
-  onChildrenAdded: (addedChildren) ->
-    #return unless @isExpanded
-
-    for entry in addedChildren
-      numberOfEntries = @entries.children.length
-      view = new EntryView()
-      entry = new Entry(entry.name)
-      view.initialize(entry)
-      insertionIndex = entry.parentIndex()
-      if insertionIndex < numberOfEntries
-        @entries.insertBefore(view, @entries.children[insertionIndex])
-      else
-        @entries.appendChild(view)
-
-module.exports = document.registerElement('outline-package', prototype: EntryView.prototype, extends: 'div')
+EntryView = document.registerElement('outline-package', prototype: EntryViewClass.prototype, extends: 'li')
+module.exports = EntryView
