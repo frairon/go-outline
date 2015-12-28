@@ -42,8 +42,7 @@ class EntryViewClass extends HTMLElement
       for entry in addedChildren
         console.log "adding children", entry
         numberOfEntries = @entries.children.length
-        view = new EntryView()
-        view.initialize(entry)
+        view = @createEntryView entry
         insertionIndex = entry.parentIndex()
         console.log "insert entry at index", insertionIndex
         if insertionIndex < numberOfEntries
@@ -51,8 +50,21 @@ class EntryViewClass extends HTMLElement
         else
           @entries.appendChild(view)
 
-    @subscriptions.add @entry.onDidRemoveChildren (removedChildren)=>
-      console.log "children removed"
+  createEntryView: (entry) ->
+    view = new EntryView()
+    view.initialize(entry)
+    entry.setView view
+
+    # subscription = @entry.onDidRemoveChildren (removedChildren)=>
+    #   for child in removedChildren
+    #     if child.name == entry.name
+    #       view.remove()
+    #       subscription.dispose()
+    #       break
+    # @subscriptions.add subscription
+
+
+    return view
 
 EntryView = document.registerElement('outline-package', prototype: EntryViewClass.prototype, extends: 'li')
 module.exports = EntryView

@@ -75,27 +75,11 @@ module.exports = class Package extends Entry
 
     @updateEntry({Name:parsed.Packagename})
 
-    # childrenToRemove = _.pick(@children, (value, key, object) ->
-    #   return value.FileName == fileName && key not in _.keys(@children)
-    # )
-
     for name, symbol of parsed.Entries
       symbol.FileName = file
-      console.log "updating child", name
       @updateChild(symbol)
 
-
-    #@removeForFile(file, _.keys(entriesToRemove))
-
-  removeForFile: (fileName, removeNames) ->
-    console.log @children
-    for name, child of @children
-      console.log child
-      child.removeForFile(fileName, removeNames)
-
-      if child.FileName == fileName && name in removeNames
-        child.remove()
-        delete @children[name]
+    @removeRemainingChildren(file, _.keys(parsed.Entries))
 
   destroy: ->
     @unwatch
@@ -105,4 +89,3 @@ module.exports = class Package extends Entry
     if @watchSubscription?
       @watchSubscription.close()
       @watchSubscription = null
-      console.log "cancelling path subscription"
