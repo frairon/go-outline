@@ -69,9 +69,9 @@ module.exports = class Package extends Entry
           @makeOutlineTree(out.join("\n"))
 
   makeOutlineTree: (parserOutput) ->
-
     parsed = JSON.parse parserOutput
     file = parsed.Filename
+
 
     @updateEntry({Name:parsed.Packagename})
 

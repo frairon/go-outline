@@ -21,13 +21,11 @@ module.exports = class Entry
 
     # if entry has a receiver
     if child?.Receiver?
-      console.log "updating child", child.Name, child.Receiver
       @getOrCreateChild(child.Receiver).getOrCreateChild(child.Name).updateEntry(child)
     else
       @getOrCreateChild(child.Name).updateEntry(child)
 
   getOrCreateChild: (name) ->
-    console.log "get or create child", name, "at", @name, @childNames
     if !@hasChild(name)
       @addChild(name, new Entry(name))
 
@@ -41,7 +39,6 @@ module.exports = class Entry
       return @children[@childNames.indexOf name]
 
   addChild: (name, child) ->
-    console.log "add child", name, "to", @name
     @children.push child
     @childNames.push name
     child.parentIndex = =>
@@ -55,23 +52,21 @@ module.exports = class Entry
     index = @childNames.indexOf childName
     child = @children[index]
 
-    @children.splice(index)
-    @childNames.splice(index)
-    #@emitter.emit('did-remove-children', [child])
-    child.view.remove()
+    @children.splice(index, 1)
+    @childNames.splice(index, 1)
+    child?.view?.remove()
 
   updateEntry: (data)->
 
     @name = data?.Name
     @fileName = data?.FileName
     @fileLine = data?.Line
+    @fileColumn = data?.Column
     @isPublic = data?.Public
     @type = data?.ElemType
     @emitter.emit("did-change")
 
   removeRemainingChildren: (fileName, existingChildNames) ->
-    console.log "remove remaining", fileName, existingChildNames, @childNames
-    removed = 0
     i=0
     while i < @children.length
       child = @children[i]
@@ -81,13 +76,8 @@ module.exports = class Entry
       # so we'll remove it.
       if child.fileName == fileName and child.name not in existingChildNames and child.children.length == 0
         @removeChild(child.name)
-        console.log "removing child", child.name, "as it is not in the exsting child names list"
-        removed += 1
         continue
-
       i+= 1
-    return removed
-
 
   onDidDestroy: (callback)->
     @emitter.on('did-destroy', callback)

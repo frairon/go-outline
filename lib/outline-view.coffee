@@ -2,6 +2,7 @@ $ = $$ = fs = _s = Q = _ = null
 
 {$, View} = require 'atom-space-pen-views'
 Registry = require './registry'
+EntryView = require './entry-view'
 
 module.exports =
 class OutlineView extends View
@@ -23,6 +24,9 @@ class OutlineView extends View
     atom.workspace.onDidChangeActivePaneItem (item) =>
       @onActivePaneChange(item)
 
+
+    @eventView = atom.views.getView(atom.workspace)
+
     @handleEvents()
 
     @registry = new Registry(@list[0])
@@ -43,6 +47,7 @@ class OutlineView extends View
       return if e.target.classList.contains('entries')
 
       @entryClicked(e) unless e.shiftKey or e.metaKey or e.ctrlKey
+
     @on 'mousedown', '.entry', (e) =>
       @onMouseDown(e)
     @on 'mousedown', '.outline-tree-resize-handle', (e) => @resizeStarted(e)
@@ -56,7 +61,21 @@ class OutlineView extends View
     e.stopPropagation()
 
   entryClicked: (e) ->
-    entry = console.log "entry clicked", e.currentTarget
+    return unless e.currentTarget instanceof EntryView
+
+    [file, line, column] = e.currentTarget.getLocation()
+
+    return unless file?
+
+    console.log "going to ", file, line
+    options =
+      searchAllPanes: true
+      initialLine: (line-1) if line
+      initialColumn:  (column-1) if column
+    atom.workspace.open(file, options)
+    #@eventView.dispatchEvent(new CustomEvent(name, bubbles: true, cancelable: true))
+    false
+
 
   resizeToFitContent: ->
     @width(1) # Shrink to measure the minimum width of list

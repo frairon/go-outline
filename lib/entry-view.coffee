@@ -30,21 +30,17 @@ class EntryViewClass extends HTMLElement
     @entries.classList.add('entries', 'list-tree')
     @appendChild(@entries)
 
-    console.log "view initialized"
   subscribeToEntry: ->
     @subscriptions.add @entry.onDidDestroy => @subscriptions.dispose()
     @subscriptions.add @entry.onDidChange =>
-      console.log "entry changed", @entry.name
       @nameTextNode.nodeValue = @entry.name
       @nameElem.title = @entry.name
     @subscriptions.add @entry.onDidAddChildren (addedChildren) =>
-      #return unless @isExpanded
+
       for entry in addedChildren
-        console.log "adding children", entry
         numberOfEntries = @entries.children.length
         view = @createEntryView entry
         insertionIndex = entry.parentIndex()
-        console.log "insert entry at index", insertionIndex
         if insertionIndex < numberOfEntries
           @entries.insertBefore(view, @entries.children[insertionIndex])
         else
@@ -55,16 +51,10 @@ class EntryViewClass extends HTMLElement
     view.initialize(entry)
     entry.setView view
 
-    # subscription = @entry.onDidRemoveChildren (removedChildren)=>
-    #   for child in removedChildren
-    #     if child.name == entry.name
-    #       view.remove()
-    #       subscription.dispose()
-    #       break
-    # @subscriptions.add subscription
-
-
     return view
+
+  getLocation: ->
+    return [@entry.fileName, @entry.fileLine, @entry.fileColumn]
 
 EntryView = document.registerElement('outline-package', prototype: EntryViewClass.prototype, extends: 'li')
 module.exports = EntryView

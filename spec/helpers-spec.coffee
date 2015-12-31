@@ -26,5 +26,13 @@ describe "child_handling", ->
     expect(a.getOrCreateChild("C").parentIndex()).toEqual(1)
     expect(a.getOrCreateChild("B").parentIndex()).toEqual(0)
 
-  it "does nothing", ->
-    expect(true).toBeTruthy()
+  it "tests remove use Entry::removeChild", ->
+    a = new Entry("A")
+    a.getOrCreateChild("B", {Name:"B"})
+    a.getOrCreateChild("C", {Name:"C"})
+    a.getOrCreateChild("D", {Name:"D"})
+    expect(a.children.length).toEqual(3)
+    expect(a.childNames).toEqual(["B", "C", "D"])
+    a.removeChild("C")
+    expect(a.children.length).toEqual(2)
+    expect(a.childNames).toEqual(["B", "D"])
