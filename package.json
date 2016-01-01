@@ -19,6 +19,7 @@
     "underscore.string": "*",
     "q": "^1.0.1",
     "underscore-plus": "^1.0.0",
-    "pathwatcher": "^6.2"
+    "pathwatcher": "^6.2",
+    "d3": ">0.0"
   }
 }

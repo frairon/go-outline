@@ -10,7 +10,7 @@ class OutlineView extends View
   @content: ->
     @div class: 'outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('outline.showOnRightSide'), =>
       @div class: 'outline-tree-scroller order--center', outlet: 'scroller', =>
-        @div class: '', outlet: 'list'
+        @div outlet: 'list', id: "outlinecontainer"
         #@ol class: 'tree-view full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
       @div class: 'outline-tree-resize-handle', outlet: 'resizeHandle'
 
@@ -28,7 +28,6 @@ class OutlineView extends View
     @eventView = atom.views.getView(atom.workspace)
 
     @handleEvents()
-
     @registry = new Registry(@list[0])
 
     @visible = localStorage.getItem('outlineStatus') == 'true'
@@ -122,6 +121,7 @@ class OutlineView extends View
   attach: ->
     _ ?= require 'underscore-plus'
     return if _.isEmpty(atom.project.getPaths())
+
 
     @panel ?=
       if @showOnRightSide
