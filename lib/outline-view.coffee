@@ -9,8 +9,7 @@ class OutlineView extends View
 
   @content: ->
     @div class: 'outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('outline.showOnRightSide'), =>
-      @div class: 'outline-tree-scroller order--center', outlet: 'scroller', =>
-        @div outlet: 'list', id: "outlinecontainer"
+      @div class: 'outline-tree-scroller order--center', outlet: 'scroller'
         #@ol class: 'tree-view full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
       @div class: 'outline-tree-resize-handle', outlet: 'resizeHandle'
 
@@ -28,7 +27,7 @@ class OutlineView extends View
     @eventView = atom.views.getView(atom.workspace)
 
     @handleEvents()
-    @registry = new Registry(@list[0])
+    @registry = new Registry(@scroller[0])
 
     @visible = localStorage.getItem('outlineStatus') == 'true'
     if @visible
@@ -78,7 +77,7 @@ class OutlineView extends View
 
   resizeToFitContent: ->
     @width(1) # Shrink to measure the minimum width of list
-    @width(@list.outerWidth())
+    @width(@contentElement()?.outerWidth())
 
   serialize: ->
 
@@ -110,7 +109,7 @@ class OutlineView extends View
     @focus()
 
   focus: ->
-    @list.focus()
+    @contentElement()?.focus()
 
   detach: ->
     @panel.destroy()
@@ -169,4 +168,7 @@ class OutlineView extends View
 
   resizeToFitContent: ->
     @width(1) # Shrink to measure the minimum width of list
-    @width(@list.outerWidth())
+    @width(@contentElement()?.outerWidth())
+
+  contentElement: ->
+    return $(@scroller[0].firstChild)

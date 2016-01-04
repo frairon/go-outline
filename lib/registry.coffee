@@ -14,22 +14,7 @@ class Registry
 
     @currentPackageDir = null;
 
-
-    @packages.push("hello")
-    @packages.push("hello")
-    @packages.push("hello")
-
-
-
   showPkgForFile:(filePath) ->
-
-
-    console.log @packages, @container, d3
-
-    container = document.getElementById('outlinecontainer')
-    console.log typeof container
-
-    d3.select(container).append("div").text("hello world")
 
     pkgDir = helpers.dirname(filePath)
     file = helpers.basename(filePath)
@@ -53,6 +38,16 @@ class Registry
       pkg.fullReparse()
 
       @packages.push(pkg)
+
+      data = d3.select(@container).append('ol')
+              .attr({class:'entries list-tree'})
+              .selectAll('li')
+              .attr({class:'entry list-nested-item outline-tree'}).data(@packages)
+
+      entries = data.enter().append("li").attr({class:'entry list-nested-item outline-tree'})
+      entries.append("span").attr({class:'name icon icon-plus'}).text (el)->
+        console.log el
+        return el.name
 
     # if the package has changed (or nothing displayed yet)
     # if !@currentPackageDir? || @currentPackageDir != pkgDir
