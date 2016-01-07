@@ -2,7 +2,6 @@ $ = $$ = fs = _s = Q = _ = null
 
 {$, View} = require 'atom-space-pen-views'
 Registry = require './registry'
-EntryView = require './entry-view'
 
 module.exports =
 class OutlineView extends View
@@ -40,40 +39,12 @@ class OutlineView extends View
   handleEvents: ->
     @on 'dblclick', '.outline-tree-resize-handle', =>
       @resizeToFitContent()
-    @on 'click', '.entry', (e) =>
-      # This prevents accidental collapsing when a .entries element is the event target
-      return if e.target.classList.contains('entries')
-
-      @entryClicked(e) unless e.shiftKey or e.metaKey or e.ctrlKey
-
     @on 'mousedown', '.entry', (e) =>
       @onMouseDown(e)
     @on 'mousedown', '.outline-tree-resize-handle', (e) => @resizeStarted(e)
-  #  @on 'dragstart', '.entry', (e) => @onDragStart(e)
-    #@on 'dragenter', '.entry.directory > .header', (e) => @onDragEnter(e)
-    #@on 'dragleave', '.entry.directory > .header', (e) => @onDragLeave(e)
-    #@on 'dragover', '.entry', (e) => @onDragOver(e)
-    #@on 'drop', '.entry', (e) => @onDrop(e)
 
   onMouseDown: (e) ->
     e.stopPropagation()
-
-  entryClicked: (e) ->
-    return unless e.currentTarget instanceof EntryView
-
-    [file, line, column] = e.currentTarget.getLocation()
-
-    return unless file?
-
-    console.log "going to ", file, line
-    options =
-      searchAllPanes: true
-      initialLine: (line-1) if line
-      initialColumn:  (column-1) if column
-    atom.workspace.open(file, options)
-    #@eventView.dispatchEvent(new CustomEvent(name, bubbles: true, cancelable: true))
-    false
-
 
   resizeToFitContent: ->
     @width(1) # Shrink to measure the minimum width of list

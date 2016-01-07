@@ -1,12 +1,8 @@
 {CompositeDisposable, Emitter} = require 'event-kit'
 
-EntryView = require './entry-view'
-
 module.exports = class Entry
 
   constructor: (@name)->
-    @emitter = new Emitter()
-    @subscriptions = new CompositeDisposable()
     @parentIndex = -> 100
     @children = []
     @childNames = []
@@ -14,6 +10,7 @@ module.exports = class Entry
     @type ="unkown"
     @fileName = "unknown"
     @fileLine = -1
+    @fileColumn = -1
     @isPublic = false
 
 
@@ -44,17 +41,12 @@ module.exports = class Entry
     child.parentIndex = =>
       @childNames.indexOf child.name
 
-    @emitter.emit('did-add-children', [child])
-
-  setView: (@view) ->
-
   removeChild: (childName) ->
     index = @childNames.indexOf childName
     child = @children[index]
 
     @children.splice(index, 1)
     @childNames.splice(index, 1)
-    child?.view?.remove()
 
   updateEntry: (data)->
 
@@ -64,7 +56,6 @@ module.exports = class Entry
     @fileColumn = data?.Column
     @isPublic = data?.Public
     @type = data?.ElemType
-    @emitter.emit("did-change")
 
   removeRemainingChildren: (fileName, existingChildNames) ->
     i=0
@@ -78,18 +69,3 @@ module.exports = class Entry
         @removeChild(child.name)
         continue
       i+= 1
-
-  onDidDestroy: (callback)->
-    @emitter.on('did-destroy', callback)
-
-  onDidChange: (callback) ->
-    @emitter.on('did-change', callback)
-
-  onDidRemoveChildren: (callback)->
-    @emitter.on('did-remove-children', callback)
-
-  onDidAddChildren: (callback)->
-    @emitter.on('did-add-children', callback)
-
-  onDidRemoveChildren: (callback) ->
-    @emitter.on('did-remove-children', callback)
