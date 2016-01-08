@@ -46,7 +46,7 @@ class Registry
 
 
   updatePackageList: (pkg) =>
-
+    console.log "updating package", pkg
     jumpToSymbol = (item) ->
       options =
         searchAllPanes: true
@@ -56,24 +56,56 @@ class Registry
       if item?.fileName
         atom.workspace.open(item.fileName, options)
 
-    makeChildren = (parentLists) ->
-      item = parentLists.append('li').attr({class:"entry list-nested-item outline-tree"})
-      parentLists.on("click", (d)->
+    createChildren = (selection) ->
+      #console.log "creating new children", selection
+      item = selection.append('li').attr({class:"entry list-nested-item outline-tree"})
+      item.on("click", (d)->
         d3.event.stopPropagation()
         jumpToSymbol(d)
-        )
-      header = item.append("div")
-      header.append("span").attr({class: "name icon icon-plus"})
-      header.append("span").text((d)->d.name)
+      )
+      content = item.append("div")
 
-      children = item.selectAll('ol')
-          .data(((d)->d.children), (d)->d.name)
-            .enter().append('ol').attr({class:'entries list-tree'})
+      content.append("span").attr({class: "name icon icon-plus"}).text((d)->d.name)
 
+      item.each((d)->
+        if d.children.length > 0
+          childList = d3.select(this).append("ol")
+          childList.attr({class:'entries list-tree'})
+          childList.selectAll("li").data((d.children), (d)->d.name).enter().call(createChildren)
+      )
+
+    updateChildren = (selection) ->
+      #console.log "updating children", selection
+      #update text
+      item = selection.select("li").select("div").select("span")
+      item.text((d)->d.name)
+
+      # select and create new children
+      item.each((d)->
+        if d.children.length > 0
+          childList = d3.select(this).append("ol")
+          childList.attr({class:'entries list-tree'})
+          childList.selectAll("li").data((d.children), (d)->d.name).enter().call(createChildren)
+      )
+
+      # select and (recursively) update children
+      children = item.select("ol").selectAll("li").data(((d)->d.children), (d)->d.name)
       if !children.empty()
-        makeChildren(children)
+        children.call(updateChildren)
 
-    roots = d3.select(@container).selectAll('ol').data([pkg], (d)->d.packagepath).enter().append("ol").attr({class:'entries list-tree'})
-    makeChildren(roots)
+      # remove superfluous children
+      item.each((d)->
+        d3.select(this).select("ol")
+          .selectAll("li")
+          .data((d.children), (d)->d.name).exit().remove()
+      )
+
+    # remove all existing
+    d3.select(@container).selectAll("li").remove()
+
+    # add all again
+    packageRoots = d3.select(@container).selectAll('li').data([pkg], (d)->d.packagepath)
+    packageRoots.enter().call(createChildren)
+    #packageRoots.call(updateChildren)
     # remove superfluous package trees
-    d3.select(@container).select('ol').data([pkg], (d)->d.packagepath).exit().remove()
+    #d3.select(@container).select('li').data([pkg], (d)->d.packagepath).exit().remove()
