@@ -103,8 +103,10 @@ class OutlineView extends View
     @registry.refreshFile(filePath)
 
   onActivePaneChange: (item) ->
-    if @isVisible()
-      @registry.showPkgForFile(@getPath())
+    return unless @isVisible()
+    return unless @getPath()?.endsWith(".go")
+
+    @registry.showPkgForFile(@getPath())
 
 
   onSideToggled: (newValue) ->

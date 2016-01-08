@@ -65,13 +65,38 @@ class Registry
       )
       content = item.append("div")
 
-      content.append("span").attr({class: "name icon icon-plus"}).text((d)->d.name)
+      updateIcon = (d)->
+        classed =
+          'icon-chevron-right': !d.expanded
+          'icon-chevron-down': d.expanded
+        d3.select(this).classed(classed)
+
+      expanderIcon = content.append("span")
+      expanderIcon.attr({class: "name icon"})
+      expanderIcon.each(updateIcon)
+      expanderIcon.text((d)->d.name)
+
 
       item.each((d)->
         if d.children.length > 0
           childList = d3.select(this).append("ol")
           childList.attr({class:'entries list-tree'})
           childList.selectAll("li").data((d.children), (d)->d.name).enter().call(createChildren)
+      )
+
+      updateExpand = ->
+        item.each((d)->
+          ol = d3.select(this).select("ol")
+          classed =
+            hidden : !d.expanded
+          ol.classed(classed)
+        )
+
+      expanderIcon.on("click", (d)->
+        d.expanded = !d.expanded
+        d3.event.stopPropagation()
+        updateIcon.apply(this, [d])
+        updateExpand()
       )
 
     updateChildren = (selection) ->

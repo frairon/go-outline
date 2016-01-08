@@ -13,6 +13,8 @@ module.exports = class Entry
     @fileColumn = -1
     @isPublic = false
 
+    @expanded = true
+
 
   updateChild: (child) ->
 
