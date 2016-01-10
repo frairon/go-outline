@@ -14,7 +14,7 @@ Entry = require './entry'
 module.exports = class Package extends Entry
   constructor: (@packagepath)->
     super("Unkown")
-    @updateEntry({ElemType:"package"})
+    @updateEntry({Elemtype:"package"})
 
     @fileStats = {}
 

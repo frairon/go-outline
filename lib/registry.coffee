@@ -46,8 +46,9 @@ class Registry
 
 
   updatePackageList: (pkg) =>
-    console.log "updating package", pkg
+    
     jumpToSymbol = (item) ->
+      return unless item.fileName?
       options =
         searchAllPanes: true
         initialLine: (item.fileLine-1) if item?.fileLine
@@ -60,27 +61,32 @@ class Registry
       #console.log "creating new children", selection
       item = selection.append('li').attr({class:"entry list-nested-item outline-tree"})
       item.on("click", (d)->
+        d.expanded = !d.expanded
         d3.event.stopPropagation()
-        jumpToSymbol(d)
+        updateIcon.apply(this, [d])
+        updateExpand()
       )
-      content = item.append("div")
+      content = item.append("div").attr({class:"list-item"})
 
       updateIcon = (d)->
         classed =
-          'icon-chevron-right': !d.expanded
-          'icon-chevron-down': d.expanded
+          'collapsed': !d.expanded
         d3.select(this).classed(classed)
 
       expanderIcon = content.append("span")
-      expanderIcon.attr({class: "name icon"})
-      expanderIcon.each(updateIcon)
+      expanderIcon.classed("icon", true)
+      expanderIcon.classed("icon-package", (d) -> d.type is "package")
+      expanderIcon.classed("icon-code" , (d) -> d.type is "func")
+      expanderIcon.classed("icon-list-unordered" , (d) -> d.type is "type")
+      expanderIcon.classed("status-renamed" , (d) -> d.isPublic)
+      expanderIcon.classed("status-modified" , (d) -> not d.isPublic)
       expanderIcon.text((d)->d.name)
 
 
       item.each((d)->
         if d.children.length > 0
           childList = d3.select(this).append("ol")
-          childList.attr({class:'entries list-tree'})
+          childList.attr({class:'list-tree'})
           childList.selectAll("li").data((d.children), (d)->d.name).enter().call(createChildren)
       )
 
@@ -93,10 +99,9 @@ class Registry
         )
 
       expanderIcon.on("click", (d)->
-        d.expanded = !d.expanded
         d3.event.stopPropagation()
-        updateIcon.apply(this, [d])
-        updateExpand()
+        jumpToSymbol(d)
+
       )
 
     updateChildren = (selection) ->

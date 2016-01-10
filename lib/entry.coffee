@@ -7,8 +7,8 @@ module.exports = class Entry
     @children = []
     @childNames = []
 
-    @type ="unkown"
-    @fileName = "unknown"
+    @type =null
+    @fileName = null
     @fileLine = -1
     @fileColumn = -1
     @isPublic = false
@@ -52,12 +52,18 @@ module.exports = class Entry
 
   updateEntry: (data)->
 
-    @name = data?.Name
-    @fileName = data?.FileName
-    @fileLine = data?.Line
-    @fileColumn = data?.Column
-    @isPublic = data?.Public
-    @type = data?.ElemType
+    if data.Name?
+      @name = data.Name
+    if data.FileName?
+      @fileName = data.FileName
+    if data.Line?
+      @fileLine = data.Line
+    if data.Column?
+      @fileColumn = data.Column
+    if data.Public?
+      @isPublic = data.Public
+    if data.Elemtype?
+      @type = data.Elemtype
 
   removeRemainingChildren: (fileName, existingChildNames) ->
     i=0
