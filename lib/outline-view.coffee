@@ -2,7 +2,6 @@ $ = $$ = fs = _s = Q = _ = null
 
 {$, View} = require 'atom-space-pen-views'
 Registry = require './registry'
-EntryView = require './entry-view'
 
 module.exports =
 class OutlineView extends View
@@ -10,8 +9,7 @@ class OutlineView extends View
   @content: ->
     @div class: 'outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('outline.showOnRightSide'), =>
       @div class: 'outline-tree-scroller order--center', outlet: 'scroller', =>
-        @div class: '', outlet: 'list'
-        #@ol class: 'tree-view full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
+        @ol class: 'outline-tree full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
       @div class: 'outline-tree-resize-handle', outlet: 'resizeHandle'
 
   initialize: (serializeState) ->
@@ -28,7 +26,6 @@ class OutlineView extends View
     @eventView = atom.views.getView(atom.workspace)
 
     @handleEvents()
-
     @registry = new Registry(@list[0])
 
     @visible = localStorage.getItem('outlineStatus') == 'true'
@@ -42,44 +39,16 @@ class OutlineView extends View
   handleEvents: ->
     @on 'dblclick', '.outline-tree-resize-handle', =>
       @resizeToFitContent()
-    @on 'click', '.entry', (e) =>
-      # This prevents accidental collapsing when a .entries element is the event target
-      return if e.target.classList.contains('entries')
-
-      @entryClicked(e) unless e.shiftKey or e.metaKey or e.ctrlKey
-
     @on 'mousedown', '.entry', (e) =>
       @onMouseDown(e)
     @on 'mousedown', '.outline-tree-resize-handle', (e) => @resizeStarted(e)
-  #  @on 'dragstart', '.entry', (e) => @onDragStart(e)
-    #@on 'dragenter', '.entry.directory > .header', (e) => @onDragEnter(e)
-    #@on 'dragleave', '.entry.directory > .header', (e) => @onDragLeave(e)
-    #@on 'dragover', '.entry', (e) => @onDragOver(e)
-    #@on 'drop', '.entry', (e) => @onDrop(e)
 
   onMouseDown: (e) ->
     e.stopPropagation()
 
-  entryClicked: (e) ->
-    return unless e.currentTarget instanceof EntryView
-
-    [file, line, column] = e.currentTarget.getLocation()
-
-    return unless file?
-
-    console.log "going to ", file, line
-    options =
-      searchAllPanes: true
-      initialLine: (line-1) if line
-      initialColumn:  (column-1) if column
-    atom.workspace.open(file, options)
-    #@eventView.dispatchEvent(new CustomEvent(name, bubbles: true, cancelable: true))
-    false
-
-
   resizeToFitContent: ->
     @width(1) # Shrink to measure the minimum width of list
-    @width(@list.outerWidth())
+    @width(@contentElement()?.outerWidth())
 
   serialize: ->
 
@@ -111,7 +80,7 @@ class OutlineView extends View
     @focus()
 
   focus: ->
-    @list.focus()
+    @contentElement()?.focus()
 
   detach: ->
     @panel.destroy()
@@ -123,6 +92,7 @@ class OutlineView extends View
     _ ?= require 'underscore-plus'
     return if _.isEmpty(atom.project.getPaths())
 
+
     @panel ?=
       if @showOnRightSide
         atom.workspace.addRightPanel(item: this)
@@ -133,8 +103,10 @@ class OutlineView extends View
     @registry.refreshFile(filePath)
 
   onActivePaneChange: (item) ->
-    if @isVisible()
-      @registry.showPkgForFile(@getPath())
+    return unless @isVisible()
+    return unless @getPath()?.endsWith(".go")
+
+    @registry.showPkgForFile(@getPath())
 
 
   onSideToggled: (newValue) ->
@@ -169,4 +141,7 @@ class OutlineView extends View
 
   resizeToFitContent: ->
     @width(1) # Shrink to measure the minimum width of list
-    @width(@list.outerWidth())
+    @width(@contentElement()?.outerWidth())
+
+  contentElement: ->
+    return $(@scroller[0].firstChild)

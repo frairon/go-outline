@@ -1,13 +1,14 @@
-helpers = require '../lib/helpers'
+Entry = require '../lib/entry'
 
-describe "HelpersTest", ->
-  it "basename test", ->
-    expect(helpers.basename("/file.d")).toEqual("file.d")
-    expect(helpers.basename("file.d")).toEqual("file.d")
-    expect(helpers.basename("/path-only/")).toEqual("")
+describe "Entry", ->
+  it "should update correctly", ->
+    entry = new Entry("entry")
+    expect(entry.name).toEqual("entry")
 
+    entry.updateEntry({ElemType:"type"})
+    expect(entry.type).toEqual("type")
+    expect(entry.fileLine).toEqual(-1)
 
-  it "dirname test", ->
-    expect(helpers.dirname("/file.d")).toEqual("/")
-    expect(helpers.dirname("file.d")).toEqual("")
-    expect(helpers.dirname("/path-only/")).toEqual("/path-only/")
+    entry.updateEntry({Line:23})
+    expect(entry.type).toEqual("type")
+    expect(entry.fileLine).toEqual(23)

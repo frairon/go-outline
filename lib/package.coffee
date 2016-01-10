@@ -14,7 +14,7 @@ Entry = require './entry'
 module.exports = class Package extends Entry
   constructor: (@packagepath)->
     super("Unkown")
-    @updateEntry({ElemType:"package"})
+    @updateEntry({Elemtype:"package"})
 
     @fileStats = {}
 
@@ -22,13 +22,15 @@ module.exports = class Package extends Entry
     # and rescan if anything changes.
     @watch()
 
+  setUpdateCallback: (@updateCallback) ->
+
   watch: ->
     try
       @watchSubscription ?= PathWatcher.watch @packagepath, (event, path) =>
         switch event
           when 'change' then @fullReparse()
 
-  fullReparse: ->
+  fullReparse: () ->
     try
       names = fs.readdirSync(@packagepath)
     catch error
@@ -67,6 +69,7 @@ module.exports = class Package extends Entry
           resolve(code)
         })).then (code) =>
           @makeOutlineTree(out.join("\n"))
+          @updateCallback(this)
 
   makeOutlineTree: (parserOutput) ->
     parsed = JSON.parse parserOutput
