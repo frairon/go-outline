@@ -59,13 +59,14 @@ class Registry
 
     createChildren = (selection) ->
       #console.log "creating new children", selection
-      item = selection.append('li').attr({class:"entry list-nested-item outline-tree"})
+      item = selection.append('li').attr({class:"entry outline-tree"})
       item.on("click", (d)->
         d.expanded = !d.expanded
         d3.event.stopPropagation()
         updateIcon.apply(this, [d])
         updateExpand()
       )
+      item.classed("list-nested-item", (d) -> d.children.length > 0)
       content = item.append("div").attr({class:"list-item"})
 
       updateIcon = (d)->
