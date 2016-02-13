@@ -2,13 +2,19 @@ $ = $$ = fs = _s = Q = _ = null
 
 {$, View} = require 'atom-space-pen-views'
 Registry = require './registry'
-
+{EventsDelegation} = require 'atom-utils'
+LocalStorage = window.localStorage
 module.exports =
 class OutlineView extends View
+  EventsDelegation.includeInto(this)
 
   @content: ->
     @div class: 'outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('outline.showOnRightSide'), =>
       @div class: 'outline-tree-scroller order--center', outlet: 'scroller', =>
+        @div class: 'block', =>
+          @div class: 'btn-group', =>
+            @div class: "btn icon icon-broadcast inline-block-tight", title: "Show test functions", outlet: 'btnShowTests'
+            @div class: "btn icon icon-mirror-private inline-block-tight", title: "Show private symbols", outlet: 'btnShowPrivate'
         @ol class: 'outline-tree full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
       @div class: 'outline-tree-resize-handle', outlet: 'resizeHandle'
 
@@ -28,13 +34,20 @@ class OutlineView extends View
     @handleEvents()
     @registry = new Registry(@list[0])
 
-    @visible = localStorage.getItem('outlineStatus') == 'true'
-    if @visible
+    if LocalStorage.getItem('outline:outline-visible') == 'true'
       @show()
 
     @onActivePaneChange(atom.workspace.getActiveTextEditor())
 
     @debug = false
+
+    @subscribeTo(@btnShowTests[0], { 'click': (e) ->
+      console.log "show tests button clicked"
+    })
+
+    @subscribeTo(@btnShowPrivate[0], { 'click': (e) ->
+      console.log "show private button clicked"
+    })
 
   handleEvents: ->
     @on 'dblclick', '.outline-tree-resize-handle', =>
@@ -67,13 +80,15 @@ class OutlineView extends View
     editor.onDidDestroy -> editorSubscriptions.dispose()
 
   toggle: ->
-    console.log "toggling"
+    console.log "toggling", @isVisible
+    console.log "my style", this[0].style
     if @isVisible()
       @detach()
     else
       @show()
+      console.log "It's visible now", @isVisible()
 
-    localStorage.setItem 'outlineStatus', @isVisible()
+    LocalStorage.setItem 'outline:outline-visible', @isVisible()
 
   show: ->
     @attach()
