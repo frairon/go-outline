@@ -1,11 +1,11 @@
 {CompositeDisposable, Emitter} = require 'event-kit'
 
+_ = require 'underscore-plus'
 module.exports = class Entry
 
   constructor: (@name)->
     @parentIndex = -> 100
     @children = []
-    @childNames = []
 
     @type =null
     @fileName = null
@@ -31,24 +31,20 @@ module.exports = class Entry
     @getChild(name)
 
   hasChild: (name) ->
-    return name in @childNames
+    return _.some(@children, (child)=>child.name==name)
 
   getChild: (name) ->
-    if @hasChild name
-      return @children[@childNames.indexOf name]
+    return _.find(@children, (child) => child.name == name)
 
   addChild: (name, child) ->
     @children.push child
-    @childNames.push name
     child.parentIndex = =>
-      @childNames.indexOf child.name
+      _.findIndex(@children, (child) => child.name == name)
+    @children = _.sortBy(@children, (child) => child.name.toLowerCase())
 
-  removeChild: (childName) ->
-    index = @childNames.indexOf childName
-    child = @children[index]
-
+  removeChild: (name) ->
+    index = _.findIndex(@children, (child) => child.name == name)
     @children.splice(index, 1)
-    @childNames.splice(index, 1)
 
   updateEntry: (data)->
 

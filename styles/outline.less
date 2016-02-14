@@ -62,24 +62,12 @@
   padding-right: @component-padding;
   position: relative;
 
-  .header {
-    position: relative;
-  }
-
-  .list-tree {
-    position: static;
-  }
-
-  .entry {
-    // This fixes #110, see that issue for more details
-    &:before {
-      content: '';
-      position: absolute;
-    }
-  }
-
   .hidden{
     display:none;
+  }
+
+  .list-item span.icon::before {
+      text-align: center;
   }
 
 }

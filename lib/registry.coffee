@@ -46,7 +46,7 @@ class Registry
 
 
   updatePackageList: (pkg) =>
-    
+
     jumpToSymbol = (item) ->
       return unless item.fileName?
       options =
@@ -57,38 +57,53 @@ class Registry
       if item?.fileName
         atom.workspace.open(item.fileName, options)
 
+    updateIcon = (d)->
+      classed =
+        'collapsed': !d.expanded
+      d3.select(this).classed(classed)
+
+    addEntryIcon = (liItem) ->
+      expanderIcon = liItem.append("span")
+      expanderIcon.classed("icon", true)
+      expanderIcon.classed("icon-file-directory", (d) -> d.type is "package")
+      expanderIcon.classed("icon-primitive-square" , (d) -> d.type is "func")
+      expanderIcon.classed("icon-link" , (d) -> d.type is "type")
+      #expanderIcon.classed("icon-mention" , (d) -> d.type is "variable")
+      expanderIcon.classed("status-modified" , (d) -> d.type is "type")
+      expanderIcon.classed("status-renamed" , (d) -> d.type is "func")
+      expanderIcon.text((d)->d.name)
+
+      expanderIcon.on("click", (d)->
+        d3.event.stopPropagation()
+        jumpToSymbol(d)
+
+      )
+
     createChildren = (selection) ->
       #console.log "creating new children", selection
-      item = selection.append('li').attr({class:"entry outline-tree"})
+      item = selection.append('li')#.attr({class:"entry"})
       item.on("click", (d)->
         d.expanded = !d.expanded
         d3.event.stopPropagation()
         updateIcon.apply(this, [d])
         updateExpand()
       )
-      item.classed("list-nested-item", (d) -> d.children.length > 0)
-      content = item.append("div").attr({class:"list-item"})
+      #item.classed("list-nested-item", (d) -> d.children.length > 0)
+      #item.classed("list-item", (d) -> d.children.length == 0)
 
-      updateIcon = (d)->
-        classed =
-          'collapsed': !d.expanded
-        d3.select(this).classed(classed)
+      nonLeafs = item.filter((d) -> d.children.length > 0)
+      nonLeafs.classed("list-nested-item", true)
+      nonLeafContent = nonLeafs.append("div").attr({class:"list-item"})
+      addEntryIcon(nonLeafContent)
 
-      expanderIcon = content.append("span")
-      expanderIcon.classed("icon", true)
-      expanderIcon.classed("icon-package", (d) -> d.type is "package")
-      expanderIcon.classed("icon-code" , (d) -> d.type is "func")
-      expanderIcon.classed("icon-list-unordered" , (d) -> d.type is "type")
-      expanderIcon.classed("status-renamed" , (d) -> d.isPublic)
-      expanderIcon.classed("status-modified" , (d) -> not d.isPublic)
-      expanderIcon.text((d)->d.name)
+      leafs = item.filter((d) -> d.children.length == 0)
+      leafs.classed("list-item", true)
+      addEntryIcon(leafs)
 
-
-      item.each((d)->
-        if d.children.length > 0
-          childList = d3.select(this).append("ol")
-          childList.attr({class:'list-tree'})
-          childList.selectAll("li").data((d.children), (d)->d.name).enter().call(createChildren)
+      nonLeafs.each((d)->
+        childList = d3.select(this).append("ol")
+        childList.attr({class:'list-tree'})
+        childList.selectAll("li").data((d.children), (d)->d.name).enter().call(createChildren)
       )
 
       updateExpand = ->
@@ -99,11 +114,7 @@ class Registry
           ol.classed(classed)
         )
 
-      expanderIcon.on("click", (d)->
-        d3.event.stopPropagation()
-        jumpToSymbol(d)
 
-      )
 
     updateChildren = (selection) ->
       #console.log "updating children", selection
