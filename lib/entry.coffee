@@ -46,6 +46,10 @@ module.exports = class Entry
     index = _.findIndex(@children, (child) => child.name == name)
     @children.splice(index, 1)
 
+  expandAll: (expanded) ->
+    @expanded = expanded
+    _.each(@children, (c) -> c.expandAll(expanded))
+
   updateEntry: (data)->
 
     if data.Name?

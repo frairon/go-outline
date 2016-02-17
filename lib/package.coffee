@@ -30,6 +30,16 @@ module.exports = class Package extends Entry
         switch event
           when 'change' then @fullReparse()
 
+  collapse: ->
+    console.log "collapsing package"
+    # collapse all children, let me expanded
+    @expandAll(false)
+    @expanded = true
+
+  expand: ->
+    console.log "expanding package"
+    @expandAll(true)
+
   fullReparse: () ->
     try
       names = fs.readdirSync(@packagepath)
