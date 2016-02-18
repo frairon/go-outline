@@ -66,8 +66,48 @@
     display:none;
   }
 
-  .list-item span.icon::before {
+  .list-item {
+
+    &:hover {
+      cursor: pointer;
+      span {
+        text-decoration: underline;
+      }
+    }
+
+    span.icon::before {
       text-align: center;
+    }
   }
 
+}
+
+.outline-navbar {
+  padding-bottom: 5px;
+  border-bottom: 1px solid #ccc;
+  .btn-group {
+    float: right;
+    > .icon {
+      display: inline-block;
+      padding: 5px 2px;
+      text-align: center;
+      &:not(.selected) {
+        color: #999;
+      }
+      &:hover {
+        cursor: pointer;
+        color: red;
+      }
+    }
+  }
+
+
+ .outline-search {
+   padding: 5px 5px 0;
+    clear: both;
+    border-top: 1px solid #ccc;
+   input {
+     width: 100%;
+   }
+ }
 }
