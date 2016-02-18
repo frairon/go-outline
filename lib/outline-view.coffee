@@ -29,6 +29,12 @@ class OutlineView extends View
         @ol class: 'outline-tree full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
       @div class: 'outline-tree-resize-handle', outlet: 'resizeHandle'
 
+  setSelected: (element, selected) ->
+    if selected
+      $(element).addClass("selected")
+    else
+      $(element).removeClass("selected")
+
   initialize: (serializeState) ->
 
     @showOnRightSide = atom.config.get('outline.showOnRightSide')
@@ -44,6 +50,14 @@ class OutlineView extends View
     @currentPackageDir = null;
     @container = @list[0]
 
+    @showTests = LocalStorage.getItem('outline:show-tests') ? true
+    @showPrivate = LocalStorage.getItem('outline:show-private') ? true
+
+    if @showTests
+      $(@btnShowTests).addClass("selected")
+
+    if @showPrivate
+      $(@btnShowPrivate).addClass("selected")
 
     @eventView = atom.views.getView(atom.workspace)
 
@@ -56,12 +70,22 @@ class OutlineView extends View
 
     @debug = false
 
-    @subscribeTo(@btnShowTests[0], { 'click': (e) ->
-      console.log "show tests button clicked"
+    @subscribeTo(@btnShowTests[0], { 'click': (e) =>
+      @showTests = !@showTests
+      @updatePackageList(@currentPackage())
+
     })
 
-    @subscribeTo(@btnShowPrivate[0], { 'click': (e) ->
-      console.log "show private button clicked"
+    @subscribeTo(@btnShowPrivate[0], { 'click': (e) =>
+      @showPrivate = !@showPrivate
+      @setSelected(@btnShowPrivate, @showPrivate)
+      @updatePackageList(@currentPackage())
+    })
+
+    @subscribeTo(@btnShowTests[0], { 'click': (e) =>
+      @showTests = !@showTests
+      @setSelected(@btnShowTests, @showTests)
+      @updatePackageList(@currentPackage())
     })
 
     @subscribeTo(@btnCollapse[0], {'click':(e) =>
@@ -83,7 +107,6 @@ class OutlineView extends View
 
   scheduleTimeout: ->
     clearTimeout(@filterTimeout)
-    filterMethod = => console.log("show filter")
     @filterTimeout = setTimeout(filterMethod , 250)
 
   handleEvents: ->
@@ -109,7 +132,7 @@ class OutlineView extends View
   initEditorSubscriptions: ->
     @editorsSubscription = atom.workspace.observeTextEditors (editor) =>
     refreshFile = => @refreshFile(editor.getPath())
-    #removeFile = => @removeCurrentFile(editor.getPath())
+    removeFile = => @removeCurrentFile(editor.getPath())
     editorSubscriptions = new CompositeDisposable()
     editorSubscriptions.add(editor.onDidSave(refreshFile))
     editorSubscriptions.add(editor.getBuffer().onDidReload(refreshFile))
@@ -117,20 +140,17 @@ class OutlineView extends View
     editor.onDidDestroy -> editorSubscriptions.dispose()
 
   toggle: ->
-    console.log "toggling", @isVisible
-    console.log "my style", this[0].style
     if @isVisible()
       @detach()
     else
       @show()
-      console.log "It's visible now", @isVisible()
 
     LocalStorage.setItem 'outline:outline-visible', @isVisible()
+    LocalStorage.setItem 'outline:show-tests', @showTests
+    LocalStorage.setItem 'outline:show-private', @showPrivate
+
 
   show: ->
-    # append input filter
-    #if !@filterInput?
-  #    @filterInput = $(@outlineToolbar).append("<atom-text-editor mini>hello world</atom-text-editor>")
     @attach()
     @focus()
 
@@ -241,6 +261,8 @@ class OutlineView extends View
       console.log "Provided null as package to display. This should not happen"
       return
 
+    outView = @
+
     jumpToSymbol = (item) ->
       return unless item.fileName?
       options =
@@ -273,6 +295,12 @@ class OutlineView extends View
 
       )
 
+    filterChildren =  (children) =>
+      return _.filter(children, (c) =>
+        return ((@showTests or c.type is not "func" or not c.name.startsWith("Test")) and
+            (@showPrivate or c.name[0].toLowerCase() != c.name[0]))
+      )
+
     createChildren = (selection) ->
       #console.log "creating new children", selection
       item = selection.append('li')
@@ -294,10 +322,11 @@ class OutlineView extends View
       leafs.classed("list-item", true)
       addEntryIcon(leafs)
 
-      nonLeafs.each((d)->
+
+      nonLeafs.each((d) ->
         childList = d3.select(this).append("ol")
         childList.attr({class:'list-tree'})
-        childList.selectAll("li").data((d.children), (d)->d.name).enter().call(createChildren)
+        childList.selectAll("li").data(filterChildren(d.children), (d)->d.name).enter().call(createChildren)
       )
 
       updateExpand = ->
