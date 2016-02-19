@@ -18,13 +18,15 @@ class OutlineView extends View
 
   @content: ->
     @div class: 'outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('outline.showOnRightSide'), =>
-      @div class: 'block', =>
-        @div class: 'btn-group', =>
-          @div class: "btn icon icon-broadcast inline-block-tight", title: "Show test functions", outlet: 'btnShowTests'
-          @div class: "btn icon icon-mirror-private inline-block-tight", title: "Show private symbols", outlet: 'btnShowPrivate'
-          @div class: "btn icon icon-alignment-align inline-block-tight", title: "Collapse", outlet: 'btnCollapse'
-          @div class: "btn icon icon-alignment-aligned-to inline-block-tight", title: "Expand", outlet: 'btnExpand'
-      @subview 'filterEditor', new TextEditorView(mini: true)
+      @nav class: 'outline-navbar', =>
+        @div class: "btn-group", =>
+          @div class: "icon icon-bug", title: "Show test functions", outlet: 'btnShowTests'
+          @div class: "icon icon-mention", title: "Show variables", outlet: 'btnShowPrivate'
+          @div class: "icon icon-gist-secret", title: "Show private symbols", outlet: 'btnShowPrivate'
+          @div class: "icon icon-chevron-up", title: "Collapse", outlet: 'btnCollapse'
+          @div class: "icon icon-chevron-down", title: "Expand", outlet: 'btnExpand'
+        @div class: "outline-search", =>
+          @input outlet: 'searchField'
       @div class: 'outline-tree-scroller order--center', outlet: 'scroller', =>
         @ol class: 'outline-tree full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
       @div class: 'outline-tree-resize-handle', outlet: 'resizeHandle'
@@ -100,8 +102,8 @@ class OutlineView extends View
       @updatePackageList(pkg)
     })
 
-    @filterEditor.getModel().getBuffer().onDidChange =>
-      @scheduleTimeout()
+  #  @filterEditor.getModel().getBuffer().onDidChange =>
+  #    @scheduleTimeout()
 
     @filterTimeout = null
 
