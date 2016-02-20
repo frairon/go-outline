@@ -81,6 +81,10 @@ module.exports = class Package extends Entry
           @makeOutlineTree(out.join("\n"))
           @updateCallback(this)
 
+  getNameAsParent: ->
+    return null
+
+
   makeOutlineTree: (parserOutput) ->
     parsed = JSON.parse parserOutput
     file = parsed.Filename

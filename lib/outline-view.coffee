@@ -20,11 +20,12 @@ class OutlineView extends View
     @div class: 'outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('outline.showOnRightSide'), =>
       @nav class: 'outline-navbar', =>
         @div class: "btn-group", =>
-          @div class: "icon icon-bug", title: "Show test functions", outlet: 'btnShowTests'
-          @div class: "icon icon-mention", title: "Show variables", outlet: 'btnShowPrivate'
-          @div class: "icon icon-gist-secret", title: "Show private symbols", outlet: 'btnShowPrivate'
-          @div class: "icon icon-chevron-up", title: "Collapse", outlet: 'btnCollapse'
-          @div class: "icon icon-chevron-down", title: "Expand", outlet: 'btnExpand'
+          @div class: "icon icon-gist-fork", title: "show tree outline", outlet: 'btnShowTree'
+          @div class: "icon icon-bug", title: "show test functions", outlet: 'btnShowTests'
+          @div class: "icon icon-mention", title: "show variables", outlet: 'btnShowVariables'
+          @div class: "icon icon-gist-secret", title: "show private symbols", outlet: 'btnShowPrivate'
+          @div class: "icon icon-chevron-up", title: "collapse all", outlet: 'btnCollapse'
+          @div class: "icon icon-chevron-down", title: "expand all", outlet: 'btnExpand'
         @div class: "outline-search", =>
           @input outlet: 'searchField'
       @div class: 'outline-tree-scroller order--center', outlet: 'scroller', =>
@@ -54,12 +55,14 @@ class OutlineView extends View
 
     @showTests = LocalStorage.getItem('outline:show-tests') ? true
     @showPrivate = LocalStorage.getItem('outline:show-private') ? true
+    @showTree = LocalStorage.getItem("outline:show-tree") ? true
 
     if @showTests
       $(@btnShowTests).addClass("selected")
-
     if @showPrivate
       $(@btnShowPrivate).addClass("selected")
+    if @showTree
+      $(@btnShowTree).addClass("selected")
 
     @eventView = atom.views.getView(atom.workspace)
 
@@ -100,6 +103,12 @@ class OutlineView extends View
       pkg = @currentPackage()
       pkg?.expand()
       @updatePackageList(pkg)
+    })
+
+    @subscribeTo(@btnShowTree[0], { 'click': (e) =>
+      @showTree = !@showTree
+      @setSelected(@btnShowTree, @showTree)
+      @updatePackageList(@currentPackage())
     })
 
   #  @filterEditor.getModel().getBuffer().onDidChange =>
@@ -150,7 +159,7 @@ class OutlineView extends View
     LocalStorage.setItem 'outline:outline-visible', @isVisible()
     LocalStorage.setItem 'outline:show-tests', @showTests
     LocalStorage.setItem 'outline:show-private', @showPrivate
-
+    LocalStorage.setItem 'outline:show-tree', @showTree
 
   show: ->
     @attach()
@@ -278,7 +287,7 @@ class OutlineView extends View
     updateIcon = (d)->
       classed =
         'collapsed': !d.expanded
-      d3.select(this).classed(classed)
+      d3.select(this).classed(classed).attr("title", d.getTitle())
 
     addEntryIcon = (liItem) ->
       expanderIcon = liItem.append("span")
@@ -289,7 +298,9 @@ class OutlineView extends View
       #expanderIcon.classed("icon-mention" , (d) -> d.type is "variable")
       expanderIcon.classed("status-modified" , (d) -> d.type is "type")
       expanderIcon.classed("status-renamed" , (d) -> d.type is "func")
-      expanderIcon.text((d)->d.name)
+      expanderIcon.text((d)->
+        if outView.showTree then d.name else d.getIdentifier()
+      )
 
       expanderIcon.on("click", (d)->
         d3.event.stopPropagation()
@@ -303,8 +314,9 @@ class OutlineView extends View
             (@showPrivate or c.name[0].toLowerCase() != c.name[0]))
       )
 
-    createChildren = (selection) ->
-      #console.log "creating new children", selection
+
+
+    createChildren = (selection, recurse) ->
       item = selection.append('li')
       item.on("click", (d)->
         d.expanded = !d.expanded
@@ -315,21 +327,28 @@ class OutlineView extends View
       # apply initially
       item.each(updateIcon)
 
-      nonLeafs = item.filter((d) -> d.children.length > 0)
-      nonLeafs.classed("list-nested-item", true)
-      nonLeafContent = nonLeafs.append("div").attr({class:"list-item"})
-      addEntryIcon(nonLeafContent)
 
-      leafs = item.filter((d) -> d.children.length == 0)
-      leafs.classed("list-item", true)
-      addEntryIcon(leafs)
+      if outView.showTree or recurse == 0
+        nonLeafs = item.filter((d) -> d.children.length > 0)
+        nonLeafs.classed("list-nested-item", true)
+        nonLeafContent = nonLeafs.append("div").attr({class:"list-item"})
+        addEntryIcon(nonLeafContent)
 
+        leafs = item.filter((d) -> d.children.length == 0)
+        leafs.classed("list-item", true)
+        addEntryIcon(leafs)
 
-      nonLeafs.each((d) ->
-        childList = d3.select(this).append("ol")
-        childList.attr({class:'list-tree'})
-        childList.selectAll("li").data(filterChildren(d.children), (d)->d.name).enter().call(createChildren)
-      )
+        nonLeafs.each((d) ->
+          childList = d3.select(this).append("ol")
+          childList.attr({class:'list-tree'})
+          data = if outView.showTree then filterChildren(d.children) else filterChildren(d.getChildrenFlat())
+          console.log "displaying hilren of ", d, data
+          childSelection = childList.selectAll("li").data(data)
+          childSelection.enter().call((s) -> createChildren(s, recurse+1))
+        )
+      else
+        item.classed("list-item", true)
+        addEntryIcon(item)
 
       updateExpand = ->
         item.each((d)->
@@ -373,7 +392,7 @@ class OutlineView extends View
 
     # add all again
     packageRoots = d3.select(@container).selectAll('li').data([pkg], (d)->d.packagepath)
-    packageRoots.enter().call(createChildren)
+    packageRoots.enter().call((c) -> createChildren(c, 0))
     #packageRoots.call(updateChildren)
     # remove superfluous package trees
     #d3.select(@container).select('li').data([pkg], (d)->d.packagepath).exit().remove()

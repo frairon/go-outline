@@ -1,4 +1,5 @@
 {CompositeDisposable, Emitter} = require 'event-kit'
+{basename} = require './helpers'
 
 _ = require 'underscore-plus'
 module.exports = class Entry
@@ -15,6 +16,27 @@ module.exports = class Entry
 
     @expanded = true
 
+    @parent = null
+
+
+  getNameAsParent: ->
+    return @name
+
+  getIdentifier: ->
+    parentName = @parent?.getNameAsParent()
+    if parentName?
+      parentName += "::"
+    else
+      parentName = ""
+
+    return parentName + @name
+
+
+  getTitle: ->
+    if @fileName? and @fileLine?
+      basename(@fileName)+":"+@fileLine
+    else
+      @name
 
   updateChild: (child) ->
 
@@ -30,6 +52,13 @@ module.exports = class Entry
 
     @getChild(name)
 
+
+  # returns all children recursively.
+  getChildrenFlat: ->
+    flatChildren = _.flatten([@children, _.map(@children, (c) -> c.getChildrenFlat())])
+
+    return _.sortBy(flatChildren, (d) -> d.name.toLowerCase())
+
   hasChild: (name) ->
     return _.some(@children, (child)=>child.name==name)
 
@@ -38,6 +67,7 @@ module.exports = class Entry
 
   addChild: (name, child) ->
     @children.push child
+    child.parent = @
     child.parentIndex = =>
       _.findIndex(@children, (child) => child.name == name)
     @children = _.sortBy(@children, (child) => child.name.toLowerCase())
