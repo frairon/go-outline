@@ -28,6 +28,7 @@ class OutlineView extends View
           @div class: "icon icon-chevron-down", title: "expand all", outlet: 'btnExpand'
         @div class: "outline-search native-key-bindings", =>
           @input outlet: 'searchField', placeholder:'filter'
+          @div class: "icon icon-x", outlet: 'btnResetFilter'
       @div class: 'outline-tree-scroller order--center', outlet: 'scroller', =>
         @ol class: 'outline-tree full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
       @div class: 'outline-tree-resize-handle', outlet: 'resizeHandle'
@@ -45,6 +46,7 @@ class OutlineView extends View
       @onSideToggled(newValue)
 
     atom.commands.add 'atom-workspace', 'outline:toggle', => @toggle()
+    atom.commands.add 'atom-workspace', 'outline:focus-filter', => @focusFilter()
     atom.workspace.onDidChangeActivePaneItem (item) =>
       @onActivePaneChange(item)
 
@@ -107,17 +109,42 @@ class OutlineView extends View
       @updatePackageList(pkg)
     })
 
+    @subscribeTo(@btnResetFilter[0], {'click': (e) =>@resetFilter()})
+
+
+
     @filterText = null;
-    @subscribeTo(@searchField[0], {"input": (e) =>
-      @filterText = @searchField[0].value
-      if !@filterText?.length
-        @filterText = null
-      @scheduleTimeout()
+    @subscribeTo(@searchField[0], {"input":(e) => @applyFilter()})
+    @subscribeTo(@searchField[0], {"keydown":(e) =>
+      if e.keyCode == 13 # pressed enter
+        console.log d3.select(@list[0]).select("li ol li")
+        hits = d3.select(@list[0]).select("li ol li").data()
+        console.log hits
+        if hits.length
+          @jumpToEntry(hits[0])
+
+        # TODO: jump to first element
+      else if e.keyCode == 27 # pressed ESC
+        @resetFilter()
     })
 
     @filterTimeout = null
 
+  resetFilter: ->
+    @searchField[0].value = ""
+    @applyFilter()
+    @searchField[0].blur()
 
+  focusFilter: ->
+    @searchField[0].focus()
+    @searchField[0].setSelectionRange(0, @searchField[0].value.length)
+
+  applyFilter: ->
+    @filterText = @searchField[0].value
+    if !@filterText?.length
+      @filterText = null
+    @scheduleTimeout()
+    
   flatOutline: ->
     return !@showTree or @filterText?
 
@@ -246,6 +273,17 @@ class OutlineView extends View
 
     @currentPackageDir = pkgDir
 
+  jumpToEntry: (item) ->
+    return unless item.fileName?
+    options =
+      searchAllPanes: true
+      initialLine: (item.fileLine-1) if item?.fileLine
+      initialColumn:  (item.fileColumn-1) if item?.fileColumn
+
+    if item?.fileName
+      atom.workspace.open(item.fileName, options)
+
+
   currentPackage: ->
     if @currentPackageDir?
       return @packages[@currentPackageDir]
@@ -260,15 +298,6 @@ class OutlineView extends View
     console.log("Refreshing package list")
     outView = @
 
-    jumpToSymbol = (item) ->
-      return unless item.fileName?
-      options =
-        searchAllPanes: true
-        initialLine: (item.fileLine-1) if item?.fileLine
-        initialColumn:  (item.fileColumn-1) if item?.fileColumn
-
-      if item?.fileName
-        atom.workspace.open(item.fileName, options)
 
     updateIcon = (d)->
       classed =
@@ -293,7 +322,7 @@ class OutlineView extends View
 
       expanderIcon.on("click", (d)->
         d3.event.stopPropagation()
-        jumpToSymbol(d)
+        outView.jumpToEntry(d)
 
       )
 
