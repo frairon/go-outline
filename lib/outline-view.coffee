@@ -26,8 +26,8 @@ class OutlineView extends View
           @div class: "icon icon-gist-secret", title: "show private symbols", outlet: 'btnShowPrivate'
           @div class: "icon icon-chevron-up", title: "collapse all", outlet: 'btnCollapse'
           @div class: "icon icon-chevron-down", title: "expand all", outlet: 'btnExpand'
-        @div class: "outline-search", =>
-          @input outlet: 'searchField'
+        @div class: "outline-search native-key-bindings", =>
+          @input outlet: 'searchField', placeholder:'filter'
       @div class: 'outline-tree-scroller order--center', outlet: 'scroller', =>
         @ol class: 'outline-tree full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
       @div class: 'outline-tree-resize-handle', outlet: 'resizeHandle'
@@ -64,8 +64,6 @@ class OutlineView extends View
     if @showTree
       $(@btnShowTree).addClass("selected")
 
-    @eventView = atom.views.getView(atom.workspace)
-
     @handleEvents()
 
     if LocalStorage.getItem('outline:outline-visible') == 'true'
@@ -73,7 +71,11 @@ class OutlineView extends View
 
     @onActivePaneChange(atom.workspace.getActiveTextEditor())
 
-    @debug = false
+    @subscribeTo(@btnShowTree[0], { 'click': (e) =>
+      @showTree = !@showTree
+      @setSelected(@btnShowTree, @showTree)
+      @updatePackageList(@currentPackage())
+    })
 
     @subscribeTo(@btnShowTests[0], { 'click': (e) =>
       @showTests = !@showTests
@@ -105,20 +107,24 @@ class OutlineView extends View
       @updatePackageList(pkg)
     })
 
-    @subscribeTo(@btnShowTree[0], { 'click': (e) =>
-      @showTree = !@showTree
-      @setSelected(@btnShowTree, @showTree)
-      @updatePackageList(@currentPackage())
+    @filterText = null;
+    @subscribeTo(@searchField[0], {"input": (e) =>
+      @filterText = @searchField[0].value
+      if !@filterText?.length
+        @filterText = null
+      @scheduleTimeout()
     })
-
-  #  @filterEditor.getModel().getBuffer().onDidChange =>
-  #    @scheduleTimeout()
 
     @filterTimeout = null
 
+
+  flatOutline: ->
+    return !@showTree or @filterText?
+
   scheduleTimeout: ->
     clearTimeout(@filterTimeout)
-    @filterTimeout = setTimeout(filterMethod , 250)
+    refreshPackage = => @updatePackageList(@currentPackage())
+    @filterTimeout = setTimeout(refreshPackage, 250)
 
   handleEvents: ->
     @on 'dblclick', '.outline-tree-resize-handle', =>
@@ -134,21 +140,8 @@ class OutlineView extends View
     @width(1) # Shrink to measure the minimum width of list
     @width(@contentElement()?.outerWidth())
 
-  serialize: ->
-
   destroy: ->
     @detach()
-    @editorsSubscription.dispose()
-
-  initEditorSubscriptions: ->
-    @editorsSubscription = atom.workspace.observeTextEditors (editor) =>
-    refreshFile = => @refreshFile(editor.getPath())
-    removeFile = => @removeCurrentFile(editor.getPath())
-    editorSubscriptions = new CompositeDisposable()
-    editorSubscriptions.add(editor.onDidSave(refreshFile))
-    editorSubscriptions.add(editor.getBuffer().onDidReload(refreshFile))
-    #editorSubscriptions.add(editor.getBuffer().onDidDestroy(removeCurrentFile))
-    editor.onDidDestroy -> editorSubscriptions.dispose()
 
   toggle: ->
     if @isVisible()
@@ -175,10 +168,7 @@ class OutlineView extends View
 
 
   attach: ->
-    _ ?= require 'underscore-plus'
     return if _.isEmpty(atom.project.getPaths())
-
-
     @panel ?=
       if @showOnRightSide
         atom.workspace.addRightPanel(item: this)
@@ -222,10 +212,6 @@ class OutlineView extends View
       width = pageX - @offset().left
     @width(width)
 
-  resizeToFitContent: ->
-    @width(1) # Shrink to measure the minimum width of list
-    @width(@contentElement()?.outerWidth())
-
   contentElement: ->
     return $(@scroller[0].firstChild)
 
@@ -266,12 +252,12 @@ class OutlineView extends View
     else
       return null
 
-
   updatePackageList: (pkg) =>
     if !pkg?
       console.log "Provided null as package to display. This should not happen"
       return
 
+    console.log("Refreshing package list")
     outView = @
 
     jumpToSymbol = (item) ->
@@ -299,7 +285,10 @@ class OutlineView extends View
       expanderIcon.classed("status-modified" , (d) -> d.type is "type")
       expanderIcon.classed("status-renamed" , (d) -> d.type is "func")
       expanderIcon.text((d)->
-        if outView.showTree then d.name else d.getIdentifier()
+        if outView.flatOutline()
+          d.getIdentifier()
+        else
+          d.name
       )
 
       expanderIcon.on("click", (d)->
@@ -309,9 +298,16 @@ class OutlineView extends View
       )
 
     filterChildren =  (children) =>
+
       return _.filter(children, (c) =>
-        return ((@showTests or c.type is not "func" or not c.name.startsWith("Test")) and
-            (@showPrivate or c.name[0].toLowerCase() != c.name[0]))
+        if @filterText?
+          filterPattern = new RegExp(@filterText.toLowerCase().split("").reduce( (a,b) -> a+'[^'+b+']*'+b ))
+
+        return (
+              (@showTests or c.type is not "func" or not c.name.startsWith("Test")) and
+              (@showPrivate or c.name[0].toLowerCase() != c.name[0]) and
+              (!@filterText or filterPattern.test(c.name.toLowerCase()))
+            )
       )
 
 
@@ -328,7 +324,7 @@ class OutlineView extends View
       item.each(updateIcon)
 
 
-      if outView.showTree or recurse == 0
+      if !outView.flatOutline() or recurse == 0
         nonLeafs = item.filter((d) -> d.children.length > 0)
         nonLeafs.classed("list-nested-item", true)
         nonLeafContent = nonLeafs.append("div").attr({class:"list-item"})
@@ -341,8 +337,7 @@ class OutlineView extends View
         nonLeafs.each((d) ->
           childList = d3.select(this).append("ol")
           childList.attr({class:'list-tree'})
-          data = if outView.showTree then filterChildren(d.children) else filterChildren(d.getChildrenFlat())
-          console.log "displaying hilren of ", d, data
+          data = if outView.flatOutline then filterChildren(d.getChildrenFlat()) else filterChildren(d.children)
           childSelection = childList.selectAll("li").data(data)
           childSelection.enter().call((s) -> createChildren(s, recurse+1))
         )
@@ -358,41 +353,9 @@ class OutlineView extends View
           ol.classed(classed)
         )
 
-
-
-    updateChildren = (selection) ->
-
-      #console.log "updating children", selection
-      #update text
-      item = selection.select("li").select("div").select("span")
-      item.text((d)->d.name)
-
-      # select and create new children
-      item.each((d)->
-        if d.children.length > 0
-          childList = d3.select(this).append("ol")
-          childList.attr({class:'entries list-tree'})
-          childList.selectAll("li").data((d.children), (d)->d.name).enter().call(createChildren)
-      )
-
-      # select and (recursively) update children
-      children = item.select("ol").selectAll("li").data(((d)->d.children), (d)->d.name)
-      if !children.empty()
-        children.call(updateChildren)
-
-      # remove superfluous children
-      item.each((d)->
-        d3.select(this).select("ol")
-          .selectAll("li")
-          .data((d.children), (d)->d.name).exit().remove()
-      )
-
     # remove all existing
     d3.select(@container).selectAll("li").remove()
 
     # add all again
     packageRoots = d3.select(@container).selectAll('li').data([pkg], (d)->d.packagepath)
     packageRoots.enter().call((c) -> createChildren(c, 0))
-    #packageRoots.call(updateChildren)
-    # remove superfluous package trees
-    #d3.select(@container).select('li').data([pkg], (d)->d.packagepath).exit().remove()

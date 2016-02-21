@@ -1,6 +1,4 @@
-{CompositeDisposable, Emitter} = require 'event-kit'
 {basename} = require './helpers'
-
 _ = require 'underscore-plus'
 module.exports = class Entry
 
