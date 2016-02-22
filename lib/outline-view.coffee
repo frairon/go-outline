@@ -57,12 +57,15 @@ class OutlineView extends View
 
     @showTests = LocalStorage.getItem('outline:show-tests') ? true
     @showPrivate = LocalStorage.getItem('outline:show-private') ? true
+    @showVariables = LocalStorage.getItem('outline:show-variables') ? true
     @showTree = LocalStorage.getItem("outline:show-tree") ? true
 
     if @showTests
       $(@btnShowTests).addClass("selected")
     if @showPrivate
       $(@btnShowPrivate).addClass("selected")
+    if @showVariables
+      $(@btnShowVariables).addClass("selected")
     if @showTree
       $(@btnShowTree).addClass("selected")
 
@@ -97,6 +100,12 @@ class OutlineView extends View
       @updatePackageList(@currentPackage())
     })
 
+    @subscribeTo(@btnShowVariables[0], { 'click': (e) =>
+      @showVariables = !@showVariables
+      @setSelected(@btnShowVariables, @showVariables)
+      @updatePackageList(@currentPackage())
+    })
+
     @subscribeTo(@btnCollapse[0], {'click':(e) =>
       pkg = @currentPackage()
       pkg?.collapse()
@@ -122,8 +131,7 @@ class OutlineView extends View
         console.log hits
         if hits.length
           @jumpToEntry(hits[0])
-
-        # TODO: jump to first element
+          @resetFilter()
       else if e.keyCode == 27 # pressed ESC
         @resetFilter()
     })
@@ -144,7 +152,7 @@ class OutlineView extends View
     if !@filterText?.length
       @filterText = null
     @scheduleTimeout()
-    
+
   flatOutline: ->
     return !@showTree or @filterText?
 
@@ -295,7 +303,6 @@ class OutlineView extends View
       console.log "Provided null as package to display. This should not happen"
       return
 
-    console.log("Refreshing package list")
     outView = @
 
 
@@ -310,9 +317,10 @@ class OutlineView extends View
       expanderIcon.classed("icon-file-directory", (d) -> d.type is "package")
       expanderIcon.classed("icon-primitive-square" , (d) -> d.type is "func")
       expanderIcon.classed("icon-link" , (d) -> d.type is "type")
-      #expanderIcon.classed("icon-mention" , (d) -> d.type is "variable")
+      expanderIcon.classed("icon-mention" , (d) -> d.type is "variable")
       expanderIcon.classed("status-modified" , (d) -> d.type is "type")
       expanderIcon.classed("status-renamed" , (d) -> d.type is "func")
+      expanderIcon.classed("status-removed" , (d) -> d.type is "variable")
       expanderIcon.text((d)->
         if outView.flatOutline()
           d.getIdentifier()
@@ -333,7 +341,8 @@ class OutlineView extends View
           filterPattern = new RegExp(@filterText.toLowerCase().split("").reduce( (a,b) -> a+'[^'+b+']*'+b ))
 
         return (
-              (@showTests or c.type is not "func" or not c.name.startsWith("Test")) and
+              (@showVariables or c.type isnt "variable") and
+              (@showTests or c.type isnt "func" or not c.name.startsWith("Test")) and
               (@showPrivate or c.name[0].toLowerCase() != c.name[0]) and
               (!@filterText or filterPattern.test(c.name.toLowerCase()))
             )
@@ -366,7 +375,7 @@ class OutlineView extends View
         nonLeafs.each((d) ->
           childList = d3.select(this).append("ol")
           childList.attr({class:'list-tree'})
-          data = if outView.flatOutline then filterChildren(d.getChildrenFlat()) else filterChildren(d.children)
+          data = if outView.flatOutline() then filterChildren(d.getChildrenFlat()) else filterChildren(d.children)
           childSelection = childList.selectAll("li").data(data)
           childSelection.enter().call((s) -> createChildren(s, recurse+1))
         )

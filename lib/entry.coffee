@@ -3,7 +3,6 @@ _ = require 'underscore-plus'
 module.exports = class Entry
 
   constructor: (@name)->
-    @parentIndex = -> 100
     @children = []
 
     @type =null
@@ -50,12 +49,23 @@ module.exports = class Entry
 
     @getChild(name)
 
+  sorter:(children) ->
+    sortedChildren = children.slice(0)
+
+    sortedChildren.sort((l,r) ->
+      typeDiff = l.getTypeRank() - r.getTypeRank()
+      if typeDiff != 0
+        return typeDiff
+
+      return l.name.localeCompare(r.name)
+    )
+
+    return sortedChildren
 
   # returns all children recursively.
   getChildrenFlat: ->
     flatChildren = _.flatten([@children, _.map(@children, (c) -> c.getChildrenFlat())])
-
-    return _.sortBy(flatChildren, (d) -> d.name.toLowerCase())
+    return @sorter(flatChildren)
 
   hasChild: (name) ->
     return _.some(@children, (child)=>child.name==name)
@@ -66,9 +76,7 @@ module.exports = class Entry
   addChild: (name, child) ->
     @children.push child
     child.parent = @
-    child.parentIndex = =>
-      _.findIndex(@children, (child) => child.name == name)
-    @children = _.sortBy(@children, (child) => child.name.toLowerCase())
+    @children = @sorter(@children)
 
   removeChild: (name) ->
     index = _.findIndex(@children, (child) => child.name == name)
@@ -92,6 +100,15 @@ module.exports = class Entry
       @isPublic = data.Public
     if data.Elemtype?
       @type = data.Elemtype
+
+  getTypeRank: ->
+    if @type == "variable"
+      return 0
+    if @type == "type"
+      return 1
+    if @type == "func"
+      return 2
+
 
   removeRemainingChildren: (fileName, existingChildNames) ->
     i=0
