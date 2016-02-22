@@ -22,11 +22,11 @@ module.exports = class Entry
   getIdentifier: ->
     parentName = @parent?.getNameAsParent()
     if parentName?
-      parentName += "::"
+      parentName = " (" + parentName + ")"
     else
       parentName = ""
 
-    return parentName + @name
+    return @name + parentName
 
 
   getTitle: ->
@@ -44,23 +44,28 @@ module.exports = class Entry
       @getOrCreateChild(child.Name).updateEntry(child)
 
   getOrCreateChild: (name) ->
-    if !@hasChild(name)
-      @addChild(name, new Entry(name))
+    child = @getChild(name)
+    if !child?
+      child = @addChild(name, new Entry(name))
 
-    @getChild(name)
-
+    return child
   sorter:(children) ->
     sortedChildren = children.slice(0)
 
     sortedChildren.sort((l,r) ->
       typeDiff = l.getTypeRank() - r.getTypeRank()
-      if typeDiff != 0
+
+      console.log(l.name, r.name, l.type, r.type, typeDiff)
+      if typeDiff isnt 0
         return typeDiff
 
       return l.name.localeCompare(r.name)
     )
 
     return sortedChildren
+  sortChildren: ->
+    @children = @sorter(@children)
+
 
   # returns all children recursively.
   getChildrenFlat: ->
@@ -68,26 +73,26 @@ module.exports = class Entry
     return @sorter(flatChildren)
 
   hasChild: (name) ->
-    return _.some(@children, (child)=>child.name==name)
+    return _.some(@children, (child) => child.name is name)
 
   getChild: (name) ->
-    return _.find(@children, (child) => child.name == name)
+    return _.find(@children, (child) => child.name is name)
 
   addChild: (name, child) ->
     @children.push child
     child.parent = @
     @children = @sorter(@children)
 
+    return child
+
   removeChild: (name) ->
-    index = _.findIndex(@children, (child) => child.name == name)
-    @children.splice(index, 1)
+    @children = _.filter(@children, (c) -> c.name isnt name)
 
   expandAll: (expanded) ->
     @expanded = expanded
     _.each(@children, (c) -> c.expandAll(expanded))
 
   updateEntry: (data)->
-
     if data.Name?
       @name = data.Name
     if data.FileName?
@@ -101,14 +106,13 @@ module.exports = class Entry
     if data.Elemtype?
       @type = data.Elemtype
 
-  getTypeRank: ->
-    if @type == "variable"
-      return 0
-    if @type == "type"
-      return 1
-    if @type == "func"
-      return 2
+    @parent?.sortChildren()
 
+  getTypeRank: ->
+    switch @type
+      when "variable" then 0
+      when "type" then 1
+      when "func" then 2
 
   removeRemainingChildren: (fileName, existingChildNames) ->
     i=0

@@ -5,7 +5,7 @@
 @import "ui-variables";
 
 
-.outline-tree-resizer {
+.go-outline-tree-resizer {
   position: relative;
   height: 100%;
   overflow: hidden;
@@ -23,7 +23,7 @@
   & > .order--center { order:   0; }
   & > .order--end    { order:  10; }
 
-  .outline-tree-resize-handle {
+  .go-outline-tree-resize-handle {
     position: absolute;
     top: 0;
     bottom: 0;
@@ -33,19 +33,19 @@
   }
 
   &[data-show-on-right-side='true'] {
-    .outline-tree-resize-handle {
+    .go-outline-tree-resize-handle {
       left: -5px;
     }
   }
 
   &[data-show-on-right-side='false'] {
-    .outline-tree-resize-handle {
+    .go-outline-tree-resize-handle {
       right: -5px;
     }
   }
 }
 
-.outline-tree-scroller {
+.go-outline-tree-scroller {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -53,7 +53,7 @@
   overflow: auto;
 }
 
-.outline-tree {
+.go-outline-tree {
   flex-grow: 1;
   flex-shrink: 0;
   min-width: -webkit-min-content;
@@ -82,7 +82,7 @@
 
 }
 
-.outline-navbar {
+.go-outline-navbar {
   padding-bottom: 5px;
   border-bottom: 1px solid #ccc;
   .btn-group {
@@ -102,12 +102,21 @@
   }
 
 
- .outline-search {
+ .go-outline-search {
    padding: 5px 5px 0;
-    clear: both;
-    border-top: 1px solid #ccc;
+   clear: both;
+   border-top: 1px solid #ccc;
+   position: relative;
    input {
-     width: 100%;
-   }
+       width: 100%;
+       padding-right: 16px;
+     }
+
+     .icon {
+       position: absolute;
+       right: -1px;
+       top: 7px;
+
+     }
  }
 }

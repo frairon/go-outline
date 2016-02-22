@@ -70,9 +70,10 @@ module.exports = class Package extends Entry
     out = []
     promise = new Promise((resolve, reject) =>
       new BufferedProcess({
-        command: 'outline-parser',
+        command: 'go-outline-parser',
         args: ['-f', filePath],
         stdout: (data) =>
+          console.log(data)
           out.push(data)
 
         exit: (code) =>

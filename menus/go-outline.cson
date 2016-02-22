@@ -2,19 +2,19 @@
 'context-menu':
   'atom-text-editor': [
     {
-      'label': 'Toggle outline'
-      'command': 'outline:toggle'
+      'label': 'Toggle go-outline'
+      'command': 'go-outline:toggle'
     }
   ]
 'menu': [
   {
     'label': 'Packages'
     'submenu': [
-      'label': 'Outline'
+      'label': 'go-outline'
       'submenu': [
         {
-          'label': 'Show/Hide Outline'
-          'command': 'outline:toggle'
+          'label': 'Show/Hide go-outline'
+          'command': 'go-outline:toggle'
         }
       ]
     ]

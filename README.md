@@ -1,4 +1,4 @@
-# outline package
+# go outline package
 
 A short description of your package.
 

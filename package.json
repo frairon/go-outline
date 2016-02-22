@@ -1,14 +1,14 @@
 {
-  "name": "outline",
-  "main": "./lib/outline",
+  "name": "go-outline",
+  "main": "./lib/go-outline",
   "version": "0.0.0",
   "description": "Displays an outline of defined symbols",
   "keywords": [
   ],
   "activationCommands": {
-    "atom-workspace": "outline:toggle"
+    "atom-workspace": "go-outline:toggle"
   },
-  "repository": "https://github.com/atom/outline",
+  "repository": "https://github.com/frairon/go-outline",
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0"
