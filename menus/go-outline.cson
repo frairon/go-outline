@@ -2,7 +2,7 @@
 'context-menu':
   'atom-text-editor': [
     {
-      'label': 'Toggle go-outline'
+      'label': 'Toggle Go Outline'
       'command': 'go-outline:toggle'
     }
   ]
@@ -10,11 +10,15 @@
   {
     'label': 'Packages'
     'submenu': [
-      'label': 'go-outline'
+      'label': 'Go Outline'
       'submenu': [
         {
-          'label': 'Show/Hide go-outline'
+          'label': 'Show/Hide Go Outline'
           'command': 'go-outline:toggle'
+        },
+        {
+          'label': 'Focus Symbol Filter'
+          'command': 'go-outline:focus-filter'
         }
       ]
     ]
