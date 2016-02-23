@@ -156,7 +156,7 @@ class GoOutlineView extends View
   scheduleTimeout: ->
     clearTimeout(@filterTimeout)
     refreshPackage = => @updatePackageList(@currentPackage())
-    @filterTimeout = setTimeout(refreshPackage, 250)
+    @filterTimeout = setTimeout(refreshPackage, 50)
 
   handleEvents: ->
     @on 'dblclick', '.go-outline-tree-resize-handle', =>
