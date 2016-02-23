@@ -49,6 +49,7 @@ module.exports = class Entry
       child = @addChild(name, new Entry(name))
 
     return child
+
   sorter:(children) ->
     sortedChildren = children.slice(0)
 
@@ -61,8 +62,11 @@ module.exports = class Entry
     )
 
     return sortedChildren
+
   sortChildren: ->
     @children = @sorter(@children)
+
+    _.each(@children, (c) -> c.sortChildren(true))
 
 
   # returns all children recursively.
@@ -79,7 +83,6 @@ module.exports = class Entry
   addChild: (name, child) ->
     @children.push child
     child.parent = @
-    @children = @sorter(@children)
 
     return child
 
@@ -103,8 +106,6 @@ module.exports = class Entry
       @isPublic = data.Public
     if data.Elemtype?
       @type = data.Elemtype
-
-    @parent?.sortChildren()
 
   getTypeRank: ->
     switch @type

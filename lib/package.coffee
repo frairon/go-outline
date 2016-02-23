@@ -45,6 +45,7 @@ module.exports = class Package extends Entry
       names = []
 
     files = []
+    promises = []
     for name in names
       # ignore non-go-files
       continue if !name.endsWith '.go'
@@ -61,12 +62,17 @@ module.exports = class Package extends Entry
           continue
 
       @fileStats[fullPath] = stat
-      @reparseFile(fullPath)
+      promises.push(@reparseFile(fullPath))
+
+    Promise.all(promises).then(=>
+      @updateCallback(this)
+      @sortChildren()
+      )
 
   reparseFile: (filePath)->
     out = []
     promise = new Promise((resolve, reject) =>
-      new BufferedProcess({
+      proc = new BufferedProcess({
         command: 'go-outline-parser',
         args: ['-f', filePath],
         stdout: (data) =>
@@ -74,13 +80,22 @@ module.exports = class Package extends Entry
 
         exit: (code) =>
           resolve(code)
-        })).then (code) =>
-          @makeOutlineTree(out.join("\n"))
-          @updateCallback(this)
+        })
+      proc.onWillThrowError((c) ->
+        console.log "Error executing go-parser-outline", c.error
+        c.handle()
+      )
 
-  getNameAsParent: ->
-    return null
+      return proc
+      ).then (code) =>
+          return unless code is 0
 
+          try
+            @makeOutlineTree(out.join("\n"))
+          catch error
+            console.log "Error creating outline from parser-output", error, out
+
+      return promise
 
   makeOutlineTree: (parserOutput) ->
     parsed = JSON.parse parserOutput
