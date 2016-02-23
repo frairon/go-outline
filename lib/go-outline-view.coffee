@@ -159,11 +159,11 @@ class GoOutlineView extends View
     @filterTimeout = setTimeout(refreshPackage, 250)
 
   handleEvents: ->
-    @on 'dblclick', '.outline-tree-resize-handle', =>
+    @on 'dblclick', '.go-outline-tree-resize-handle', =>
       @resizeToFitContent()
     @on 'mousedown', '.entry', (e) =>
       @onMouseDown(e)
-    @on 'mousedown', '.outline-tree-resize-handle', (e) => @resizeStarted(e)
+    @on 'mousedown', '.go-outline-tree-resize-handle', (e) => @resizeStarted(e)
 
   onMouseDown: (e) ->
     e.stopPropagation()
