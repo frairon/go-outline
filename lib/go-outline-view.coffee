@@ -21,9 +21,9 @@ class GoOutlineView extends View
       @nav class: 'go-outline-navbar', =>
         @div class: "btn-group", =>
           @div class: "icon icon-gist-fork", title: "show tree go-outline", outlet: 'btnShowTree'
-          @div class: "icon icon-bug", title: "show test functions", outlet: 'btnShowTests'
           @div class: "icon icon-mention", title: "show variables", outlet: 'btnShowVariables'
           @div class: "icon icon-gist-secret", title: "show private symbols", outlet: 'btnShowPrivate'
+          @div class: "icon icon-bug", title: "show test functions", outlet: 'btnShowTests'
           @div class: "icon icon-chevron-up stateless", title: "collapse all", outlet: 'btnCollapse'
           @div class: "icon icon-chevron-down stateless", title: "expand all", outlet: 'btnExpand'
         @div class: "go-outline-search", =>
