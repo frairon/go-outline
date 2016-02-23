@@ -54,8 +54,6 @@ module.exports = class Entry
 
     sortedChildren.sort((l,r) ->
       typeDiff = l.getTypeRank() - r.getTypeRank()
-
-      console.log(l.name, r.name, l.type, r.type, typeDiff)
       if typeDiff isnt 0
         return typeDiff
 

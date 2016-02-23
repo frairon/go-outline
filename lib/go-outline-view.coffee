@@ -41,7 +41,6 @@ class GoOutlineView extends View
 
   initialize: (serializeState) ->
 
-
     @showOnRightSide = atom.config.get('go-outline.showOnRightSide')
     atom.config.onDidChange 'go-outline.showOnRightSide', ({newValue}) =>
       @onSideToggled(newValue)
@@ -56,10 +55,15 @@ class GoOutlineView extends View
     @currentPackageDir = null;
     @container = @list[0]
 
-    @showTests = LocalStorage.getItem('go-outline:show-tests') ? true
-    @showPrivate = LocalStorage.getItem('go-outline:show-private') ? true
-    @showVariables = LocalStorage.getItem('go-outline:show-variables') ? true
-    @showTree = LocalStorage.getItem("go-outline:show-tree") ? true
+    @filterTimeout = null
+    @initializeButtons()
+    @handleEvents()
+
+  initializeButtons: ->
+    @showTests = atom.config.get('go-outline.showTests')
+    @showPrivate = atom.config.get('go-outline.showPrivates')
+    @showVariables = atom.config.get('go-outline.showVariables')
+    @showTree = atom.config.get('go-outline.showTree')
 
     if @showTests
       $(@btnShowTests).addClass("selected")
@@ -70,12 +74,6 @@ class GoOutlineView extends View
     if @showTree
       $(@btnShowTree).addClass("selected")
 
-    @handleEvents()
-
-    if LocalStorage.getItem('go-outline:outline-visible') == 'true'
-      @show()
-
-    @onActivePaneChange(atom.workspace.getActiveTextEditor())
 
     @subscribeTo(@btnShowTree[0], { 'click': (e) =>
       @showTree = !@showTree
@@ -122,7 +120,6 @@ class GoOutlineView extends View
     @subscribeTo(@btnResetFilter[0], {'click': (e) =>@resetFilter()})
 
 
-
     @filterText = null;
     @subscribeTo(@searchField[0], {"input":(e) => @applyFilter()})
     @subscribeTo(@searchField[0], {"keydown":(e) =>
@@ -137,7 +134,6 @@ class GoOutlineView extends View
         @resetFilter()
     })
 
-    @filterTimeout = null
 
   resetFilter: ->
     @searchField[0].value = ""
@@ -177,6 +173,12 @@ class GoOutlineView extends View
     @width(@contentElement()?.outerWidth())
 
   destroy: ->
+
+    atom.config.set 'go-outline.showTests', @showTests
+    atom.config.set 'go-outline.showPrivates', @showPrivate
+    atom.config.set 'go-outline.showTree', @showTree
+    atom.config.set 'go-outline.showVariables', @showVariables
+
     @detach()
 
   toggle: ->
@@ -185,31 +187,20 @@ class GoOutlineView extends View
     else
       @show()
 
-    LocalStorage.setItem 'go-outline:outline-visible', @isVisible()
-    LocalStorage.setItem 'go-outline:show-tests', @showTests
-    LocalStorage.setItem 'go-outline:show-private', @showPrivate
-    LocalStorage.setItem 'go-outline:show-tree', @showTree
-
   show: ->
-    @attach()
-    @focus()
-
-  focus: ->
-    @contentElement()?.focus()
-
-  detach: ->
-    @panel.destroy()
-    @panel = null
-
-
-
-  attach: ->
     return if _.isEmpty(atom.project.getPaths())
     @panel ?=
       if @showOnRightSide
         atom.workspace.addRightPanel(item: this)
       else
         atom.workspace.addLeftPanel(item: this)
+
+    @onActivePaneChange(atom.workspace.getActiveTextEditor())
+
+  detach: ->
+    @panel.destroy()
+    @panel = null
+
 
   onActivePaneChange: (item) ->
     return unless @isVisible()
