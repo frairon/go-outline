@@ -65,8 +65,8 @@ module.exports = class Package extends Entry
       promises.push(@reparseFile(fullPath))
 
     Promise.all(promises).then(=>
-      @updateCallback(this)
       @sortChildren()
+      @updateCallback(this)
       )
 
   reparseFile: (filePath)->
