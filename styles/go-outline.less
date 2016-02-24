@@ -96,7 +96,21 @@
       }
       &:hover {
         cursor: pointer;
-        color: red;
+        color: @background-color-selected;
+      }
+
+      &.icon-chevron-up,
+      &.icon-chevron-down {
+        padding: 5px 0;
+
+        &::before {
+          width: 10px;
+        }
+
+        &:not(.selected):hover {
+          cursor: default;
+          color: #999;
+        }
       }
     }
   }

@@ -20,12 +20,13 @@ class GoOutlineView extends View
     @div class: 'go-outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('go-outline.showOnRightSide'), =>
       @nav class: 'go-outline-navbar', =>
         @div class: "btn-group", =>
-          @div class: "icon icon-gist-fork", title: "show tree go-outline", outlet: 'btnShowTree'
           @div class: "icon icon-mention", title: "show variables", outlet: 'btnShowVariables'
           @div class: "icon icon-gist-secret", title: "show private symbols", outlet: 'btnShowPrivate'
           @div class: "icon icon-bug", title: "show test functions", outlet: 'btnShowTests'
-          @div class: "icon icon-chevron-up stateless", title: "collapse all", outlet: 'btnCollapse'
-          @div class: "icon icon-chevron-down stateless", title: "expand all", outlet: 'btnExpand'
+          @div class: "icon", " "
+          @div class: "icon icon-gist-fork", title: "show tree go-outline", outlet: 'btnShowTree'
+          @div class: "icon icon-chevron-up", title: "collapse all", outlet: 'btnCollapse'
+          @div class: "icon icon-chevron-down", title: "expand all", outlet: 'btnExpand'
         @div class: "go-outline-search", =>
           @input outlet: 'searchField', placeholder:'filter', class:'native-key-bindings'
           @div class: "icon icon-x", outlet: 'btnResetFilter'
@@ -64,27 +65,21 @@ class GoOutlineView extends View
     @showPrivate = atom.config.get('go-outline.showPrivates')
     @showVariables = atom.config.get('go-outline.showVariables')
     @showTree = atom.config.get('go-outline.showTree')
-
-    if @showTests
-      $(@btnShowTests).addClass("selected")
-    if @showPrivate
-      $(@btnShowPrivate).addClass("selected")
-    if @showVariables
-      $(@btnShowVariables).addClass("selected")
-    if @showTree
-      $(@btnShowTree).addClass("selected")
+  
+    @setSelected(@btnShowVariables, @showVariables)
+    @setSelected(@btnShowTests, @showTests)
+    @setSelected(@btnShowPrivate, @showPrivate)
+    @setSelected(@btnShowTree, @showTree)
+    @setSelected(@btnCollapse, @showTree)
+    @setSelected(@btnExpand, @showTree)
 
 
     @subscribeTo(@btnShowTree[0], { 'click': (e) =>
       @showTree = !@showTree
       @setSelected(@btnShowTree, @showTree)
+      @setSelected(@btnCollapse, @showTree)
+      @setSelected(@btnExpand, @showTree)
       @updatePackageList(@currentPackage())
-    })
-
-    @subscribeTo(@btnShowTests[0], { 'click': (e) =>
-      @showTests = !@showTests
-      @updatePackageList(@currentPackage())
-
     })
 
     @subscribeTo(@btnShowPrivate[0], { 'click': (e) =>
