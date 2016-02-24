@@ -1,4 +1,3 @@
-
 # Go Outline
 Simple outline for golang files.
 
