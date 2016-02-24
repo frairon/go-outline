@@ -121,7 +121,7 @@ module.exports = class Entry
 
       # child is of the file, the child's name is not in the new list and it does not have any children itself
       # so we'll remove it.
-      if child.fileName == fileName and child.name not in existingChildNames and child.children.length == 0
+      if child.fileName == fileName and !(child.name in existingChildNames)
         @removeChild(child.name)
         continue
       i+= 1
