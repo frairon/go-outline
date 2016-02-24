@@ -65,7 +65,7 @@ class GoOutlineView extends View
     @showPrivate = atom.config.get('go-outline.showPrivates')
     @showVariables = atom.config.get('go-outline.showVariables')
     @showTree = atom.config.get('go-outline.showTree')
-  
+
     @setSelected(@btnShowVariables, @showVariables)
     @setSelected(@btnShowTests, @showTests)
     @setSelected(@btnShowPrivate, @showPrivate)
@@ -326,14 +326,22 @@ class GoOutlineView extends View
     filterChildren =  (children) =>
 
       return _.filter(children, (c) =>
+
+        searcher = (c) -> true
+
         if @filterText?
-          filterPattern = new RegExp(@filterText.toLowerCase().split("").reduce( (a,b) -> a+'[^'+b+']*'+b ))
+          needles = @filterText.toLowerCase().split(" ")
+          searcher = (c) ->
+            lowName = c.name.toLowerCase()
+            return _.every(needles, (n) ->
+              lowName.indexOf(n) > -1
+              )
 
         return (
               (@showVariables or c.type isnt "variable") and
               (@showTests or c.type isnt "func" or not c.name.startsWith("Test")) and
               (@showPrivate or c.isPublic) and
-              (!@filterText or filterPattern.test(c.name.toLowerCase()))
+              (!@filterText or searcher(c))
             )
       )
 
