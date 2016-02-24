@@ -1,10 +1,9 @@
 {
   "name": "go-outline",
   "main": "./lib/go-outline",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Displays an outline of symbols for Golang",
-  "keywords": [
-  ],
+  "keywords": [],
   "activationCommands": {
     "atom-workspace": "go-outline:toggle"
   },
