@@ -1,6 +1,9 @@
 # Go Outline
 Simple outline for golang files.
 
+![Go Outline Screenshot](https://github.com/frairon/go-outline/blob/master/resources/screenshot.png?raw=true)
+
+
 It shows the symbols of the whole package:
 * global variables/constants
 * global functions
