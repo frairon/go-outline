@@ -28,7 +28,7 @@ class GoOutlineView extends View
           @div class: "icon icon-chevron-up", title: "collapse all", outlet: 'btnCollapse'
           @div class: "icon icon-chevron-down", title: "expand all", outlet: 'btnExpand'
         @div class: "go-outline-search", =>
-          @input outlet: 'searchField', placeholder:'filter', class:'native-key-bindings'
+          @subview 'searchField', new TextEditorView(mini: true)
           @div class: "icon icon-x", outlet: 'btnResetFilter'
       @div class: 'go-outline-tree-scroller order--center', outlet: 'scroller', =>
         @ol class: 'go-outline-tree full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
@@ -116,31 +116,34 @@ class GoOutlineView extends View
 
 
     @filterText = null;
-    @subscribeTo(@searchField[0], {"input":(e) => @applyFilter()})
-    @subscribeTo(@searchField[0], {"keydown":(e) =>
+
+    @searchBuffer().onDidChange(@applyFilter)
+
+    editorView = atom.views.getView(@searchField)
+    editorView.addEventListener 'keydown', (e) =>
       if e.keyCode == 13 # pressed enter
         console.log d3.select(@list[0]).select("li ol li")
         hits = d3.select(@list[0]).select("li ol li").data()
-        console.log hits
         if hits.length
           @jumpToEntry(hits[0])
           @resetFilter()
       else if e.keyCode == 27 # pressed ESC
         @resetFilter()
-    })
 
+  searchBuffer: =>
+    @searchField.getModel().getBuffer()
 
-  resetFilter: ->
-    @searchField[0].value = ""
+  resetFilter: =>
+    @searchBuffer().setText("")
     @applyFilter()
-    @searchField[0].blur()
+    @searchField.blur()
 
-  focusFilter: ->
-    @searchField[0].focus()
-    @searchField[0].setSelectionRange(0, @searchField[0].value.length)
+  focusFilter: =>
+    @searchField.focus()
+    @searchField.getModel().selectAll()
 
-  applyFilter: ->
-    @filterText = @searchField[0].value
+  applyFilter: =>
+    @filterText = @searchBuffer().getText()
     if !@filterText?.length
       @filterText = null
     @scheduleTimeout()
@@ -285,66 +288,71 @@ class GoOutlineView extends View
     else
       return null
 
+  setEntryIcon: (liItem) ->
+    expanderIcon = liItem.append("span")
+
+    entryStyleClasses =
+      package:"icon icon-file-directory"
+      variable:"icon icon-mention variable"
+      type: "icon name type go icon-link entity"
+      func: "icon icon-primitive-square entity name function"
+
+    for entryType, styleClasses of entryStyleClasses
+      expanderIcon.filter((d)-> d.type is entryType).classed(styleClasses, true)
+
+    expanderIcon.text((d)=>
+      if @flatOutline()
+        d.getIdentifier()
+      else
+        d.name
+    )
+
+    expanderIcon.on("click", (d)=>
+      d3.event.stopPropagation()
+      @jumpToEntry(d)
+
+    )
+
+  filterChildren: (children) =>
+
+    return _.filter(children, (c) =>
+
+      searcher = (c) -> true
+
+      if @filterText?
+        needles = @filterText.toLowerCase().split(" ")
+        searcher = (c) ->
+          lowName = c.name.toLowerCase()
+          return _.every(needles, (n) ->
+            lowName.indexOf(n) > -1
+            )
+
+      return (
+            (@showVariables or c.type isnt "variable") and
+            (@showTests or c.type isnt "func" or not c.name.startsWith("Test")) and
+            (@showPrivate or c.isPublic) and
+            (!@filterText or searcher(c))
+          )
+    )
+
+  showFilteredList: (pkg) =>
+    if !pkg?
+      console.log "Provided null as package to display. This should not happen"
+      return
+
+
+
   updatePackageList: (pkg) =>
     if !pkg?
       console.log "Provided null as package to display. This should not happen"
       return
 
-    outView = @
+    outlineView = @
 
-
-    updateIcon = (d)->
+    updateExpanderIcon = (d)->
       classed =
         'collapsed': !d.expanded
       d3.select(this).classed(classed).attr("title", d.getTitle())
-
-    addEntryIcon = (liItem) ->
-      expanderIcon = liItem.append("span")
-
-      entryStyleClasses =
-        package:"icon icon-file-directory"
-        variable:"icon icon-mention variable"
-        type: "icon name type go icon-link entity"
-        func: "icon icon-primitive-square entity name function"
-
-      for entryType, styleClasses of entryStyleClasses
-        expanderIcon.filter((d)-> d.type is entryType).classed(styleClasses, true)
-
-      expanderIcon.text((d)->
-        if outView.flatOutline()
-          d.getIdentifier()
-        else
-          d.name
-      )
-
-      expanderIcon.on("click", (d)->
-        d3.event.stopPropagation()
-        outView.jumpToEntry(d)
-
-      )
-
-    filterChildren =  (children) =>
-
-      return _.filter(children, (c) =>
-
-        searcher = (c) -> true
-
-        if @filterText?
-          needles = @filterText.toLowerCase().split(" ")
-          searcher = (c) ->
-            lowName = c.name.toLowerCase()
-            return _.every(needles, (n) ->
-              lowName.indexOf(n) > -1
-              )
-
-        return (
-              (@showVariables or c.type isnt "variable") and
-              (@showTests or c.type isnt "func" or not c.name.startsWith("Test")) and
-              (@showPrivate or c.isPublic) and
-              (!@filterText or searcher(c))
-            )
-      )
-
 
 
     createChildren = (selection, recurse) ->
@@ -352,33 +360,33 @@ class GoOutlineView extends View
       item.on("click", (d)->
         d.expanded = !d.expanded
         d3.event.stopPropagation()
-        updateIcon.apply(this, [d])
+        updateExpanderIcon.apply(this, [d])
         updateExpand()
       )
       # apply initially
-      item.each(updateIcon)
+      item.each(updateExpanderIcon)
 
 
-      if !outView.flatOutline() or recurse == 0
+      if !outlineView.flatOutline() or recurse == 0
         nonLeafs = item.filter((d) -> d.children.length > 0)
         nonLeafs.classed("list-nested-item", true)
         nonLeafContent = nonLeafs.append("div").attr({class:"list-item"})
-        addEntryIcon(nonLeafContent)
+        outlineView.setEntryIcon(nonLeafContent)
 
         leafs = item.filter((d) -> d.children.length == 0)
         leafs.classed("list-item", true)
-        addEntryIcon(leafs)
+        outlineView.setEntryIcon(leafs)
 
         nonLeafs.each((d) ->
           childList = d3.select(this).append("ol")
           childList.attr({class:'list-tree'})
-          data = if outView.flatOutline() then filterChildren(d.getChildrenFlat()) else filterChildren(d.children)
+          data = if outlineView.flatOutline() then outlineView.filterChildren(d.getChildrenFlat()) else outlineView.filterChildren(d.children)
           childSelection = childList.selectAll("li").data(data)
           childSelection.enter().call((s) -> createChildren(s, recurse+1))
         )
       else
         item.classed("list-item", true)
-        addEntryIcon(item)
+        outlineView.setEntryIcon(item)
 
       updateExpand = ->
         item.each((d)->
