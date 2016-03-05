@@ -122,9 +122,8 @@ class GoOutlineView extends View
     editorView = atom.views.getView(@searchField)
     editorView.addEventListener 'keydown', (e) =>
       if e.keyCode == 13 # pressed enter
-        console.log d3.select(@list[0]).select("li ol li")
         hits = d3.select(@list[0]).select("li ol li").data()
-        if hits.length
+        if hits.length>0 and hits[0]?
           @jumpToEntry(hits[0])
           @resetFilter()
       else if e.keyCode == 27 # pressed ESC
