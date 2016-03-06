@@ -1,4 +1,4 @@
-## 0.1.1 - minor fixes
+## 0.2.0 - styling, minor fixes
  * use native filter field for theme-aware colors
  * flash line after jump
  * bugfix expand/collapse
