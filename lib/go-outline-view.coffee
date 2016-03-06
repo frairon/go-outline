@@ -158,12 +158,7 @@ class GoOutlineView extends View
   handleEvents: ->
     @on 'dblclick', '.go-outline-tree-resize-handle', =>
       @resizeToFitContent()
-    @on 'mousedown', '.entry', (e) =>
-      @onMouseDown(e)
     @on 'mousedown', '.go-outline-tree-resize-handle', (e) => @resizeStarted(e)
-
-  onMouseDown: (e) ->
-    e.stopPropagation()
 
   resizeToFitContent: ->
     @width(1) # Shrink to measure the minimum width of list
@@ -271,14 +266,33 @@ class GoOutlineView extends View
     @currentPackageDir = pkgDir
 
   jumpToEntry: (item) ->
-    return unless item.fileName?
+    return false unless item.fileName?
     options =
       searchAllPanes: true
       initialLine: (item.fileLine-1) if item?.fileLine
       initialColumn:  (item.fileColumn-1) if item?.fileColumn
-
     if item?.fileName
-      atom.workspace.open(item.fileName, options)
+      atom.workspace.open(item.fileName, options).then (editor) =>
+        if options.initialLine?
+          editor.scrollToBufferPosition([options.initialLine, options.initialColumn], {center:true}) #markBufferRange(
+          @flash(editor, [[options.initialLine, 0], [options.initialLine, 100]])
+
+
+  flash: (editor, range) ->
+    marker = editor.markBufferRange range,
+      invalidate: 'never'
+      persistent: false
+      maintainHistory: false
+
+    # set flashy class to marker.
+    editor.decorateMarker marker,
+      type: 'line'
+      class: 'go-outline-highlight-line'
+
+    # after timeout, remove the marker
+    setTimeout ->
+      marker.destroy()
+    , 300
 
 
   currentPackage: ->
@@ -305,10 +319,10 @@ class GoOutlineView extends View
       else
         d.name
     )
+    expanderIcon.on("mouseup", (d)=>
+      if @jumpToEntry(d)
+        d3.event.stopPropagation()
 
-    expanderIcon.on("click", (d)=>
-      d3.event.stopPropagation()
-      @jumpToEntry(d)
 
     )
 
@@ -356,7 +370,7 @@ class GoOutlineView extends View
 
     createChildren = (selection, recurse) ->
       item = selection.append('li')
-      item.on("click", (d)->
+      item.on("mouseup", (d)->
         d.expanded = !d.expanded
         d3.event.stopPropagation()
         updateExpanderIcon.apply(this, [d])

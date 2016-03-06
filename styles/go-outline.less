@@ -3,6 +3,14 @@
 // See https://github.com/atom/atom-dark-ui/blob/master/styles/ui-variables.less
 // for a full listing of what's available.
 @import "ui-variables";
+@import "syntax-variables";
+
+atom-text-editor::shadow {
+  .line.go-outline-highlight-line{
+    background-color: @background-color-selected;
+  }
+}
+
 
 
 .go-outline-tree-resizer {
@@ -75,8 +83,13 @@
       }
     }
 
-    span.icon::before {
-      text-align: center;
+    span.icon {
+      display: inline-block;
+      width: 100%;
+
+        &::before {
+        text-align: center;
+      }
     }
   }
 
