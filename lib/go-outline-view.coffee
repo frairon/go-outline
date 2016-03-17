@@ -28,7 +28,7 @@ class GoOutlineView extends View
           @div class: "icon icon-chevron-up", title: "collapse all", outlet: 'btnCollapse'
           @div class: "icon icon-chevron-down", title: "expand all", outlet: 'btnExpand'
         @div class: "go-outline-search", =>
-          @subview 'searchField', new TextEditorView(mini: true)
+          @subview 'searchField', new TextEditorView({mini: true, placeholderText:"filter"})
           @div class: "icon icon-x", outlet: 'btnResetFilter'
       @div class: 'go-outline-tree-scroller order--center', outlet: 'scroller', =>
         @ol class: 'go-outline-tree full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
@@ -129,6 +129,10 @@ class GoOutlineView extends View
       else if e.keyCode == 27 # pressed ESC
         @resetFilter()
 
+    editorView.addEventListener 'focus', (e) =>
+      @searchField.getModel().selectAll()
+
+
   searchBuffer: =>
     @searchField.getModel().getBuffer()
 
@@ -139,7 +143,6 @@ class GoOutlineView extends View
 
   focusFilter: =>
     @searchField.focus()
-    @searchField.getModel().selectAll()
 
   applyFilter: =>
     @filterText = @searchBuffer().getText()
