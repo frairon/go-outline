@@ -59,6 +59,10 @@ class GoOutlineView extends View
     @filterTimeout = null
     @initializeButtons()
     @handleEvents()
+    
+    atom.workspace.observeTextEditors (editor) =>
+      editor.onDidSave =>
+        @currentPackage().fullReparse()
 
   initializeButtons: ->
     @showTests = atom.config.get('go-outline.showTests')
