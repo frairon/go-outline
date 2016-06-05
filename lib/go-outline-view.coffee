@@ -7,8 +7,7 @@ d3 = require 'd3'
 path = require 'path'
 _ = require 'underscore-plus'
 
-
-Package = require './package'
+Folder = require './folder'
 
 {EventsDelegation} = require 'atom-utils'
 LocalStorage = window.localStorage
@@ -51,9 +50,9 @@ class GoOutlineView extends View
     atom.workspace.onDidChangeActivePaneItem (item) =>
       @onActivePaneChange(item)
 
-    @packages = {}
+    @folders = {}
 
-    @currentPackageDir = null;
+    @currentDir = null;
     @container = @list[0]
 
     @filterTimeout = null
@@ -79,37 +78,39 @@ class GoOutlineView extends View
       @setSelected(@btnShowTree, @showTree)
       @setSelected(@btnCollapse, @showTree)
       @setSelected(@btnExpand, @showTree)
-      @updatePackageList(@currentPackage())
+      @updateSymbolList(@currentFolder())
     })
 
     @subscribeTo(@btnShowPrivate[0], { 'click': (e) =>
       @showPrivate = !@showPrivate
       @setSelected(@btnShowPrivate, @showPrivate)
-      @updatePackageList(@currentPackage())
+      @updateSymbolList(@currentFolder())
     })
 
     @subscribeTo(@btnShowTests[0], { 'click': (e) =>
       @showTests = !@showTests
       @setSelected(@btnShowTests, @showTests)
-      @updatePackageList(@currentPackage())
+      @updateSymbolList(@currentFolder())
     })
 
     @subscribeTo(@btnShowVariables[0], { 'click': (e) =>
       @showVariables = !@showVariables
       @setSelected(@btnShowVariables, @showVariables)
-      @updatePackageList(@currentPackage())
+      @updateSymbolList(@currentFolder())
     })
 
     @subscribeTo(@btnCollapse[0], {'click':(e) =>
-      pkg = @currentPackage()
-      pkg?.collapse()
-      @updatePackageList(pkg)
+      folder = @currentFolder()
+      if folder?
+        folder.collapsePackages()
+        @updateSymbolList(folder)
     })
 
     @subscribeTo(@btnExpand[0], {'click':(e) =>
-      pkg = @currentPackage()
-      pkg?.expand()
-      @updatePackageList(pkg)
+      folder = @currentFolder()
+      if folder?
+        folder.expandPackages()
+        @updateSymbolList(folder)
     })
 
     @subscribeTo(@btnResetFilter[0], {'click': (e) =>@resetFilter()})
@@ -155,7 +156,7 @@ class GoOutlineView extends View
 
   scheduleTimeout: ->
     clearTimeout(@filterTimeout)
-    refreshPackage = => @updatePackageList(@currentPackage())
+    refreshPackage = => @updateSymbolList(@currentFolder())
     @filterTimeout = setTimeout(refreshPackage, 50)
 
   handleEvents: ->
@@ -201,7 +202,7 @@ class GoOutlineView extends View
     return unless @isVisible()
     return unless @getPath()?.endsWith(".go")
 
-    @showPkgForFile(@getPath())
+    @showPkgsForPath(@getPath())
 
 
   onSideToggled: (newValue) ->
@@ -238,16 +239,16 @@ class GoOutlineView extends View
     return $(@scroller[0].firstChild)
 
 
-  showPkgForFile:(filePath, @packageUpdated) ->
+  showPkgsForPath:(filePath) ->
 
-    pkgDir = helpers.dirname(filePath)
+    folderPath = helpers.dirname(filePath)
     file = helpers.basename(filePath)
 
-    return unless pkgDir != @currentPackageDir
+    return unless folderPath != @currentDir
 
 
     # invalid
-    if !pkgDir.length || !file.length
+    if !folderPath.length || !file.length
       console.log "invalid file location provided", filePath, "..ignoring"
       return
 
@@ -256,17 +257,17 @@ class GoOutlineView extends View
       return
 
     # if package for folder does not exist, create it
-    if !@packages[pkgDir]?
-      pkg = new Package(pkgDir)
-      pkg.setUpdateCallback(@updatePackageList)
+    if !@folders[folderPath]?
+      folder = new Folder(folderPath)
+      folder.setUpdateCallback(@updateSymbolList)
 
-      @packages[pkgDir] = pkg
+      @folders[folderPath] = folder
 
-      pkg.fullReparse()
+      folder.fullReparse()
     else
-      @updatePackageList(@packages[pkgDir])
+      @updateSymbolList(@folders[folderPath])
 
-    @currentPackageDir = pkgDir
+    @currentDir = folderPath
 
   jumpToEntry: (item) ->
     return false unless item.fileName?
@@ -298,9 +299,9 @@ class GoOutlineView extends View
     , 300
 
 
-  currentPackage: ->
-    if @currentPackageDir?
-      return @packages[@currentPackageDir]
+  currentFolder: ->
+    if @currentDir?
+      return @folders[@currentDir]
     else
       return null
 
@@ -357,11 +358,7 @@ class GoOutlineView extends View
       return
 
 
-
-  updatePackageList: (pkg) =>
-    if !pkg?
-      console.log "Provided null as package to display. This should not happen"
-      return
+  updateSymbolList: (folder) =>
 
     outlineView = @
 
@@ -416,5 +413,5 @@ class GoOutlineView extends View
     d3.select(@container).selectAll("li").remove()
 
     # add all again
-    packageRoots = d3.select(@container).selectAll('li').data([pkg], (d)->d.packagepath)
+    packageRoots = d3.select(@container).selectAll('li').data(folder.getPackages(), (d)->d.name)
     packageRoots.enter().call((c) -> createChildren(c, 0))
