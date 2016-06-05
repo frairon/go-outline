@@ -104,6 +104,17 @@ module.exports = class Folder
 
     pkg = @packages[packageName]
 
+    pkg.addFile(file)
+    for name, p of @packages
+      continue if p is pkg
+
+      p.removeFile(file)
+
+    for name in _.keys(@packages)
+      if not @packages[name].hasFiles()
+        delete @packages[name]
+
+
     for name, symbol of parsed.Entries
       symbol.FileName = file
       pkg.updateChild(symbol)
