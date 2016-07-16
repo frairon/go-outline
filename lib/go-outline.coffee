@@ -17,6 +17,9 @@ module.exports =
     showOnRightSide:
       type: 'boolean'
       default: true
+    linkFile:
+      type: 'boolean'
+      default: true
 
 
 

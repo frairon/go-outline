@@ -24,6 +24,7 @@ class GoOutlineView extends View
           @div class: "icon icon-bug", title: "show test functions", outlet: 'btnShowTests'
           @div class: "icon", " "
           @div class: "icon icon-gist-fork", title: "show tree go-outline", outlet: 'btnShowTree'
+          @div class: "icon icon-link", title: "link go-outline with tree view", outlet: 'btnLinkFile'
           @div class: "icon icon-chevron-up", title: "collapse all", outlet: 'btnCollapse'
           @div class: "icon icon-chevron-down", title: "expand all", outlet: 'btnExpand'
         @div class: "go-outline-search", =>
@@ -64,6 +65,7 @@ class GoOutlineView extends View
     @showPrivate = atom.config.get('go-outline.showPrivates')
     @showVariables = atom.config.get('go-outline.showVariables')
     @showTree = atom.config.get('go-outline.showTree')
+    @linkFile = atom.config.get('go-outline.linkFile')
 
     @setSelected(@btnShowVariables, @showVariables)
     @setSelected(@btnShowTests, @showTests)
@@ -71,6 +73,7 @@ class GoOutlineView extends View
     @setSelected(@btnShowTree, @showTree)
     @setSelected(@btnCollapse, @showTree)
     @setSelected(@btnExpand, @showTree)
+    @setSelected(@btnLinkFile, @linkFile)
 
 
     @subscribeTo(@btnShowTree[0], { 'click': (e) =>
@@ -111,6 +114,13 @@ class GoOutlineView extends View
       if folder?
         folder.expandPackages()
         @updateSymbolList(folder)
+    })
+
+    @subscribeTo(@btnLinkFile[0], { 'click': (e) =>
+      @linkFile = !@linkFile
+      @setSelected(@btnLinkFile, @linkFile)
+      if @linkFile
+        @onActivePaneChange(atom.workspace.getActiveTextEditor())
     })
 
     @subscribeTo(@btnResetFilter[0], {'click': (e) =>@resetFilter()})
@@ -174,6 +184,7 @@ class GoOutlineView extends View
     atom.config.set 'go-outline.showPrivates', @showPrivate
     atom.config.set 'go-outline.showTree', @showTree
     atom.config.set 'go-outline.showVariables', @showVariables
+    atom.config.set 'go-outline.linkFile', @linkFile
 
     @detach()
 
@@ -199,6 +210,7 @@ class GoOutlineView extends View
 
 
   onActivePaneChange: (item) ->
+    return unless @linkFile
     return unless @isVisible()
     return unless @getPath()?.endsWith(".go")
 
