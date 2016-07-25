@@ -6,7 +6,7 @@ module.exports = class Entry
     @children = []
 
     @type =null
-    @fileName = null
+    @fileNames = new Set()
     @fileLine = -1
     @fileColumn = -1
     @isPublic = false
@@ -30,8 +30,8 @@ module.exports = class Entry
 
 
   getTitle: ->
-    if @fileName? and @fileLine?
-      basename(@fileName)+":"+@fileLine
+    if @fileNames.size > 0 and @fileLine?
+      basename(@fileNames.values().next().value)+":"+@fileLine
     else
       @name
 
@@ -97,7 +97,7 @@ module.exports = class Entry
     if data.Name?
       @name = data.Name
     if data.FileName?
-      @fileName = data.FileName
+      @fileNames.add(data.FileName)
     if data.Line?
       @fileLine = data.Line
     if data.Column?
@@ -121,7 +121,7 @@ module.exports = class Entry
 
       # child is of the file, the child's name is not in the new list and it does not have any children itself
       # so we'll remove it.
-      if child.fileName == fileName and !(child.name in existingChildNames)
+      if child.fileNames.remove(fileName) and !(child.name in existingChildNames) and child.fileNames.size == 0
         @removeChild(child.name)
         continue
       i+= 1

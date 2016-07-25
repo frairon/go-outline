@@ -19,6 +19,7 @@ class GoOutlineView extends View
     @div class: 'go-outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('go-outline.showOnRightSide'), =>
       @nav class: 'go-outline-navbar', =>
         @div class: "btn-group", =>
+          @div class: "icon icon-circuit-board", title: "show full package (only this file, if disabled)", outlet: 'btnShowFullPackage'
           @div class: "icon icon-mention", title: "show variables", outlet: 'btnShowVariables'
           @div class: "icon icon-gist-secret", title: "show private symbols", outlet: 'btnShowPrivate'
           @div class: "icon icon-bug", title: "show test functions", outlet: 'btnShowTests'
@@ -66,7 +67,9 @@ class GoOutlineView extends View
     @showVariables = atom.config.get('go-outline.showVariables')
     @showTree = atom.config.get('go-outline.showTree')
     @linkFile = atom.config.get('go-outline.linkFile')
+    @showFullPackage = atom.config.get('go-outline.showFullPackage')
 
+    @setSelected(@btnShowFullPackage, @showFullPackage)
     @setSelected(@btnShowVariables, @showVariables)
     @setSelected(@btnShowTests, @showTests)
     @setSelected(@btnShowPrivate, @showPrivate)
@@ -99,6 +102,12 @@ class GoOutlineView extends View
     @subscribeTo(@btnShowVariables[0], { 'click': (e) =>
       @showVariables = !@showVariables
       @setSelected(@btnShowVariables, @showVariables)
+      @updateSymbolList(@currentFolder())
+    })
+
+    @subscribeTo(@btnShowFullPackage[0], { 'click': (e) =>
+      @showFullPackage = !@showFullPackage
+      @setSelected(@btnShowFullPackage, @showFullPackage)
       @updateSymbolList(@currentFolder())
     })
 
@@ -184,6 +193,7 @@ class GoOutlineView extends View
     atom.config.set 'go-outline.showPrivates', @showPrivate
     atom.config.set 'go-outline.showTree', @showTree
     atom.config.set 'go-outline.showVariables', @showVariables
+    atom.config.set 'go-outline.showFullPackage', @showFullPackage
     atom.config.set 'go-outline.linkFile', @linkFile
 
     @detach()
@@ -256,8 +266,12 @@ class GoOutlineView extends View
     folderPath = helpers.dirname(filePath)
     file = helpers.basename(filePath)
 
-    return unless folderPath != @currentDir
-
+    if folderPath == @currentDir
+      if not @showFullPackage
+        @updateSymbolList(@folders[@currentDir])
+        return
+      else
+        return
 
     # invalid
     if !folderPath.length || !file.length
@@ -359,6 +373,7 @@ class GoOutlineView extends View
       return (
             (@showVariables or c.type isnt "variable") and
             (@showTests or c.type isnt "func" or not c.name.startsWith("Test")) and
+            (@showFullPackage or c.fileNames.has(@getPath())) and
             (@showPrivate or c.isPublic) and
             (!@filterText or searcher(c))
           )

@@ -11,6 +11,9 @@ module.exports =
     showVariables:
       type: 'boolean'
       default: true
+    showFullPackage:
+      type: 'boolean'
+      default: true
     showTree:
       type: 'boolean'
       default: true
