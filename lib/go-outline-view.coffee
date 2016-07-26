@@ -296,13 +296,13 @@ class GoOutlineView extends View
     @currentDir = folderPath
 
   jumpToEntry: (item) ->
-    return false unless item.fileName?
+    return false unless item.fileDef?
     options =
       searchAllPanes: true
       initialLine: (item.fileLine-1) if item?.fileLine
       initialColumn:  (item.fileColumn-1) if item?.fileColumn
-    if item?.fileName
-      atom.workspace.open(item.fileName, options).then (editor) =>
+    if item?.fileDef
+      atom.workspace.open(item.fileDef, options).then (editor) =>
         if options.initialLine?
           editor.scrollToBufferPosition([options.initialLine, options.initialColumn], {center:true}) #markBufferRange(
           @flash(editor, [[options.initialLine, 0], [options.initialLine, 100]])
@@ -343,6 +343,12 @@ class GoOutlineView extends View
     for entryType, styleClasses of entryStyleClasses
       expanderIcon.filter((d)-> d.type is entryType).classed(styleClasses, true)
 
+    currentPath = @getPath()
+    if !@showFullPackage
+      expanderIcon.filter((d) -> d.type != "package" and d.fileDef != currentPath).classed("implicit-parent", true)
+    else
+      expanderIcon.filter((d) -> d.type != "package" and d.fileDef == currentPath).classed("current-file-symbol", true)
+
     expanderIcon.text((d)=>
       if @flatOutline()
         d.getIdentifier()
@@ -357,7 +363,6 @@ class GoOutlineView extends View
     )
 
   filterChildren: (children) =>
-
     return _.filter(children, (c) =>
 
       searcher = (c) -> true
@@ -369,11 +374,10 @@ class GoOutlineView extends View
           return _.every(needles, (n) ->
             lowName.indexOf(n) > -1
             )
-
       return (
             (@showVariables or c.type isnt "variable") and
             (@showTests or c.type isnt "func" or not c.name.startsWith("Test")) and
-            (@showFullPackage or c.fileNames.has(@getPath())) and
+            (@showFullPackage or c.fileDef == @getPath() or c.filesUsage.has(@getPath())) and
             (@showPrivate or c.isPublic) and
             (!@filterText or searcher(c))
           )
