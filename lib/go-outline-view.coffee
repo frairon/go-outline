@@ -19,7 +19,6 @@ class GoOutlineView extends View
     @div class: 'go-outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('go-outline.showOnRightSide'), =>
       @nav class: 'go-outline-navbar', =>
         @div class: "btn-group", =>
-          @div class: "icon icon-circuit-board", title: "show full package (only this file, if disabled)", outlet: 'btnShowFullPackage'
           @div class: "icon icon-mention", title: "show variables", outlet: 'btnShowVariables'
           @div class: "icon icon-gist-secret", title: "show private symbols", outlet: 'btnShowPrivate'
           @div class: "icon icon-bug", title: "show test functions", outlet: 'btnShowTests'
@@ -28,6 +27,10 @@ class GoOutlineView extends View
           @div class: "icon icon-link", title: "link go-outline with tree view", outlet: 'btnLinkFile'
           @div class: "icon icon-chevron-up", title: "collapse all", outlet: 'btnCollapse'
           @div class: "icon icon-chevron-down", title: "expand all", outlet: 'btnExpand'
+        @div class: "inline-block btn-group", =>
+          @button class: "btn selected icon icon-file-directory inline-block-tight", outlet: 'tabFileView', "file"
+          @button class: "btn  icon icon-file-text inline-block-tight", outlet: 'tabPackageView', "package"
+
         @div class: "go-outline-search", =>
           @subview 'searchField', new TextEditorView({mini: true, placeholderText:"filter"})
           @div class: "icon icon-x", outlet: 'btnResetFilter'
@@ -67,9 +70,8 @@ class GoOutlineView extends View
     @showVariables = atom.config.get('go-outline.showVariables')
     @showTree = atom.config.get('go-outline.showTree')
     @linkFile = atom.config.get('go-outline.linkFile')
-    @showFullPackage = atom.config.get('go-outline.showFullPackage')
+    @currentView = atom.config.get('go-outline.currentView')
 
-    @setSelected(@btnShowFullPackage, @showFullPackage)
     @setSelected(@btnShowVariables, @showVariables)
     @setSelected(@btnShowTests, @showTests)
     @setSelected(@btnShowPrivate, @showPrivate)
@@ -77,6 +79,12 @@ class GoOutlineView extends View
     @setSelected(@btnCollapse, @showTree)
     @setSelected(@btnExpand, @showTree)
     @setSelected(@btnLinkFile, @linkFile)
+
+    updateViewTabs = =>
+      @setSelected(@tabFileView, @currentView == 'file')
+      @setSelected(@tabPackageView, @currentView == 'package')
+
+    updateViewTabs()
 
 
     @subscribeTo(@btnShowTree[0], { 'click': (e) =>
@@ -105,9 +113,15 @@ class GoOutlineView extends View
       @updateSymbolList(@currentFolder())
     })
 
-    @subscribeTo(@btnShowFullPackage[0], { 'click': (e) =>
-      @showFullPackage = !@showFullPackage
-      @setSelected(@btnShowFullPackage, @showFullPackage)
+    @subscribeTo(@tabFileView[0], { 'click': (e) =>
+      @currentView = 'file'
+      updateViewTabs()
+      @updateSymbolList(@currentFolder())
+    })
+
+    @subscribeTo(@tabPackageView[0], { 'click': (e) =>
+      @currentView = 'package'
+      updateViewTabs()
       @updateSymbolList(@currentFolder())
     })
 
@@ -193,7 +207,7 @@ class GoOutlineView extends View
     atom.config.set 'go-outline.showPrivates', @showPrivate
     atom.config.set 'go-outline.showTree', @showTree
     atom.config.set 'go-outline.showVariables', @showVariables
-    atom.config.set 'go-outline.showFullPackage', @showFullPackage
+    atom.config.set 'go-outline.currentView', @currentView
     atom.config.set 'go-outline.linkFile', @linkFile
 
     @detach()
@@ -267,7 +281,7 @@ class GoOutlineView extends View
     file = helpers.basename(filePath)
 
     if folderPath == @currentDir
-      if not @showFullPackage
+      if @currentView == "file"
         @updateSymbolList(@folders[@currentDir])
         return
       else
@@ -344,10 +358,10 @@ class GoOutlineView extends View
       expanderIcon.filter((d)-> d.type is entryType).classed(styleClasses, true)
 
     currentPath = @getPath()
-    if !@showFullPackage
+    if @currentView == 'file'
       expanderIcon.filter((d) -> d.type != "package" and d.fileDef != currentPath).classed("implicit-parent", true)
-    else
-      expanderIcon.filter((d) -> d.type != "package" and d.fileDef == currentPath).classed("current-file-symbol", true)
+    #else
+    #  expanderIcon.filter((d) -> d.type != "package" and d.fileDef == currentPath).classed("current-file-symbol", true)
 
     expanderIcon.text((d)=>
       if @flatOutline()
@@ -377,7 +391,7 @@ class GoOutlineView extends View
       return (
             (@showVariables or c.type isnt "variable") and
             (@showTests or c.type isnt "func" or not c.name.startsWith("Test")) and
-            (@showFullPackage or c.fileDef == @getPath() or c.filesUsage.has(@getPath())) and
+            (@currentView == "package" or c.fileDef == @getPath() or c.filesUsage.has(@getPath())) and
             (@showPrivate or c.isPublic) and
             (!@filterText or searcher(c))
           )
