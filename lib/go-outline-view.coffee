@@ -282,7 +282,7 @@ class GoOutlineView extends View
 
     if folderPath == @currentDir
       if @currentView == "file"
-        @updateSymbolList(@folders[@currentDir])
+        @updateSymbolList(@currentFolder())
         return
       else
         return
@@ -390,7 +390,7 @@ class GoOutlineView extends View
             )
       return (
             (@showVariables or c.type isnt "variable") and
-            (@showTests or c.type isnt "func" or not c.name.startsWith("Test")) and
+            (@showTests or c.type is "package" or not c.isTestEntry()) and
             (@currentView == "package" or c.fileDef == @getPath() or c.filesUsage.has(@getPath())) and
             (@showPrivate or c.isPublic) and
             (!@filterText or searcher(c))
@@ -404,6 +404,7 @@ class GoOutlineView extends View
 
 
   updateSymbolList: (folder) =>
+    return unless folder?
 
     outlineView = @
 
