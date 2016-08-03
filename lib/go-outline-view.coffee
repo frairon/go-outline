@@ -34,6 +34,12 @@ class GoOutlineView extends View
         @div class: "go-outline-search", =>
           @subview 'searchField', new TextEditorView({mini: true, placeholderText:"filter"})
           @div class: "icon icon-x", outlet: 'btnResetFilter'
+      @div class: "select-list popover-list", =>
+        @ol class: "list-group", =>
+          @li class:"", =>
+            @div class: "status status-ignored  icon icon-mention", "Show Variables"
+          @li "second"
+          @li "third"
       @div class: 'go-outline-tree-scroller order--center', outlet: 'scroller', =>
         @ol class: 'go-outline-tree full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
       @div class: 'go-outline-tree-resize-handle', outlet: 'resizeHandle'
