@@ -154,4 +154,18 @@ atom-text-editor::shadow {
 
      }
  }
+
+ .go-outline-options {
+   position: absolute;
+   top: 80px;
+   z-index: 10;
+   right: 10px;
+   ol {
+     li {
+       &:hover {
+         background-color: @background-color-highlight;
+       }
+     }
+   }
+ }
 }
