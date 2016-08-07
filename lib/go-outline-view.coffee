@@ -19,33 +19,41 @@ class GoOutlineView extends View
     @div class: 'go-outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('go-outline.showOnRightSide'), =>
       @nav class: 'go-outline-navbar', =>
         @div class: "btn-group", =>
-          @div class: "icon icon-mention", title: "show variables", outlet: 'btnShowVariables'
-          @div class: "icon icon-gist-secret", title: "show private symbols", outlet: 'btnShowPrivate'
-          @div class: "icon icon-bug", title: "show test functions", outlet: 'btnShowTests'
-          @div class: "icon", " "
-          @div class: "icon icon-gist-fork", title: "show tree go-outline", outlet: 'btnShowTree'
-          @div class: "icon icon-link", title: "link go-outline with tree view", outlet: 'btnLinkFile'
           @div class: "icon icon-chevron-up", title: "collapse all", outlet: 'btnCollapse'
           @div class: "icon icon-chevron-down", title: "expand all", outlet: 'btnExpand'
         @div class: "inline-block btn-group", =>
           @button class: "btn selected icon icon-file-directory inline-block-tight", outlet: 'tabFileView', "file"
           @button class: "btn  icon icon-file-text inline-block-tight", outlet: 'tabPackageView', "package"
+          @button class: "btn  icon icon-file-text inline-block-tight", outlet: 'btnOptions', "Options"
 
         @div class: "go-outline-search", =>
           @subview 'searchField', new TextEditorView({mini: true, placeholderText:"filter"})
           @div class: "icon icon-x", outlet: 'btnResetFilter'
-      @div class: "select-list popover-list", =>
-        @ol class: "list-group", =>
-          @li class:"", =>
-            @div class: "status status-ignored  icon icon-mention", "Show Variables"
-          @li "second"
-          @li "third"
+        @div class: "go-outline-options select-list popover-list", outlet: "menu", =>
+          @ol class: "list-group", =>
+            @li class: "", "Show Variables", outlet:"btnShowVariables"
+            @li class: "", "Show Private Symbols", outlet: 'btnShowPrivate'
+            @li class: "", "Show Test Symbols", outlet: 'btnShowTests'
+            @li class: "", "Show As Tree", outlet: 'btnShowTree'
+            @li class: "", "Link Go-Outline with Editor/Treeview", outlet: 'btnLinkFile'
       @div class: 'go-outline-tree-scroller order--center', outlet: 'scroller', =>
         @ol class: 'go-outline-tree full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
       @div class: 'go-outline-tree-resize-handle', outlet: 'resizeHandle'
 
-  setSelected: (element, selected) ->
-    if selected
+  setOptionActive: (element, active) ->
+    if active
+      $(element).addClass("icon icon-check")
+    else
+      $(element).removeClass("icon icon-check")
+
+  setOptionEnabled: (element, enabled) ->
+    if enabled
+      $(element).addClass("status status-ignored")
+    else
+      $(element).removeClass("status status-ignored")
+
+  setButtonEnabled: (element, enabled) ->
+    if enabled
       $(element).addClass("selected")
     else
       $(element).removeClass("selected")
@@ -78,44 +86,61 @@ class GoOutlineView extends View
     @linkFile = atom.config.get('go-outline.linkFile')
     @currentView = atom.config.get('go-outline.currentView')
 
-    @setSelected(@btnShowVariables, @showVariables)
-    @setSelected(@btnShowTests, @showTests)
-    @setSelected(@btnShowPrivate, @showPrivate)
-    @setSelected(@btnShowTree, @showTree)
-    @setSelected(@btnCollapse, @showTree)
-    @setSelected(@btnExpand, @showTree)
-    @setSelected(@btnLinkFile, @linkFile)
+    @setOptionActive(@btnShowVariables, @showVariables)
+    @setOptionActive(@btnShowTests, @showTests)
+    @setOptionActive(@btnShowPrivate, @showPrivate)
+    @setOptionActive(@btnShowTree, @showTree)
+    @setOptionActive(@btnLinkFile, @linkFile)
 
     updateViewTabs = =>
-      @setSelected(@tabFileView, @currentView == 'file')
-      @setSelected(@tabPackageView, @currentView == 'package')
+      @setButtonEnabled(@tabFileView, @currentView == 'file')
+      @setButtonEnabled(@tabPackageView, @currentView == 'package')
 
     updateViewTabs()
 
 
+    updateButtons = =>
+      @setOptionActive(@btnShowTree, @showTree)
+      @setButtonEnabled(@btnCollapse, @showTree)
+      @setButtonEnabled(@btnExpand, @showTree)
+      @setOptionActive(@btnShowPrivate, @showPrivate)
+      @setOptionActive(@btnShowTests, @showTests)
+      @setOptionActive(@btnShowVariables, @showVariables)
+      @setOptionActive(@btnLinkFile, @linkFile)
+
+
     @subscribeTo(@btnShowTree[0], { 'click': (e) =>
       @showTree = !@showTree
-      @setSelected(@btnShowTree, @showTree)
-      @setSelected(@btnCollapse, @showTree)
-      @setSelected(@btnExpand, @showTree)
+      updateButtons()
       @updateSymbolList(@currentFolder())
     })
 
     @subscribeTo(@btnShowPrivate[0], { 'click': (e) =>
       @showPrivate = !@showPrivate
-      @setSelected(@btnShowPrivate, @showPrivate)
+      updateButtons()
       @updateSymbolList(@currentFolder())
     })
 
     @subscribeTo(@btnShowTests[0], { 'click': (e) =>
       @showTests = !@showTests
-      @setSelected(@btnShowTests, @showTests)
+      updateButtons()
       @updateSymbolList(@currentFolder())
+    })
+
+    @showMenu = false
+
+    @subscribeTo(@btnOptions[0], {'click': (e) =>
+      @showMenu = !@showMenu
+      if @showMenu
+        $(@menu[0]).addClass('hidden')
+      else
+        $(@menu[0]).removeClass('hidden')
+
     })
 
     @subscribeTo(@btnShowVariables[0], { 'click': (e) =>
       @showVariables = !@showVariables
-      @setSelected(@btnShowVariables, @showVariables)
+      updateButtons()
       @updateSymbolList(@currentFolder())
     })
 
@@ -147,7 +172,7 @@ class GoOutlineView extends View
 
     @subscribeTo(@btnLinkFile[0], { 'click': (e) =>
       @linkFile = !@linkFile
-      @setSelected(@btnLinkFile, @linkFile)
+      updateButtons()
       if @linkFile
         @onActivePaneChange(atom.workspace.getActiveTextEditor())
     })
