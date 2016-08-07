@@ -18,24 +18,25 @@ class GoOutlineView extends View
   @content: ->
     @div class: 'go-outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('go-outline.showOnRightSide'), =>
       @nav class: 'go-outline-navbar', =>
-        @div class: "btn-group", =>
-          @div class: "icon icon-chevron-up", title: "collapse all", outlet: 'btnCollapse'
-          @div class: "icon icon-chevron-down", title: "expand all", outlet: 'btnExpand'
-        @div class: "inline-block btn-group", =>
-          @button class: "btn selected icon icon-file-directory inline-block-tight", outlet: 'tabFileView', "file"
-          @button class: "btn  icon icon-file-text inline-block-tight", outlet: 'tabPackageView', "package"
-          @button class: "btn  icon icon-file-text inline-block-tight", outlet: 'btnOptions', "Options"
-
+        @div class: "go-outline-nav", =>
+          @div class: "go-outline-views", =>
+            @button class: "btn selected icon icon-file-directory inline-block-tight", outlet: 'tabFileView', "file"
+            @button class: "btn icon icon-file-text inline-block-tight", outlet: 'tabPackageView', "package"
+          @div class: "go-outline-options", =>
+            @button class: "btn", outlet: 'btnOptions', "options"
+            @div class: "go-outline-options-popover select-list popover-list hidden", outlet: "menu", =>
+              @ol class: "list-group", =>
+                @li class: "", "show variables", outlet:"btnShowVariables"
+                @li class: "", "show private symbols", outlet: 'btnShowPrivate'
+                @li class: "", "show test symbols", outlet: 'btnShowTests'
+                @li class: "", "show as tree", outlet: 'btnShowTree'
+                @li class: "", "Link go-outline with editor", outlet: 'btnLinkFile'
         @div class: "go-outline-search", =>
           @subview 'searchField', new TextEditorView({mini: true, placeholderText:"filter"})
           @div class: "icon icon-x", outlet: 'btnResetFilter'
-        @div class: "go-outline-options select-list popover-list", outlet: "menu", =>
-          @ol class: "list-group", =>
-            @li class: "", "Show Variables", outlet:"btnShowVariables"
-            @li class: "", "Show Private Symbols", outlet: 'btnShowPrivate'
-            @li class: "", "Show Test Symbols", outlet: 'btnShowTests'
-            @li class: "", "Show As Tree", outlet: 'btnShowTree'
-            @li class: "", "Link Go-Outline with Editor/Treeview", outlet: 'btnLinkFile'
+        @div class: "go-outline-collapse", =>
+            @div class: "icon icon-chevron-up", title: "collapse all", outlet: 'btnCollapse'
+            @div class: "icon icon-chevron-down", title: "expand all", outlet: 'btnExpand'
       @div class: 'go-outline-tree-scroller order--center', outlet: 'scroller', =>
         @ol class: 'go-outline-tree full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
       @div class: 'go-outline-tree-resize-handle', outlet: 'resizeHandle'
