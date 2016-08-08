@@ -25,6 +25,7 @@ class GoOutlineView extends View
           @div class: "go-outline-options", =>
             @button class: "btn", outlet: 'btnOptions', "options"
             @div class: "go-outline-options-popover select-list popover-list hidden", outlet: "menu", =>
+              @h3 class:"block test-highlight", "Display Options"
               @ol class: "list-group", =>
                 @li class: "", "show variables", outlet:"btnShowVariables"
                 @li class: "", "show private symbols", outlet: 'btnShowPrivate'
@@ -130,13 +131,21 @@ class GoOutlineView extends View
 
     @showMenu = false
 
+    updateMenu = =>
+      if @showMenu
+        $(@menu[0]).removeClass('hidden')
+      else
+        $(@menu[0]).addClass('hidden')
+
+
     @subscribeTo(@btnOptions[0], {'click': (e) =>
       @showMenu = !@showMenu
-      if @showMenu
-        $(@menu[0]).addClass('hidden')
-      else
-        $(@menu[0]).removeClass('hidden')
+      updateMenu()
+    })
 
+    @subscribeTo(@menu[0], {'mouseleave': (e) =>
+      @showMenu = false
+      updateMenu()
     })
 
     @subscribeTo(@btnShowVariables[0], { 'click': (e) =>
