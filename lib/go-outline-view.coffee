@@ -19,7 +19,7 @@ class GoOutlineView extends View
     @div class: 'go-outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('go-outline.showOnRightSide'), =>
       @nav class: 'go-outline-navbar', =>
         @div =>
-          @span class:"badge", '0/0', outlet: 'bdgErrors'
+          @span outlet: 'bdgErrors'
         @div class: "btn-group", =>
           @div class: "icon icon-mention", title: "show variables", outlet: 'btnShowVariables'
           @div class: "icon icon-gist-secret", title: "show private symbols", outlet: 'btnShowPrivate'
@@ -79,18 +79,15 @@ class GoOutlineView extends View
     isDone = (failedFiles.size + doneFiles.size) >= allFiles.size
 
     element = $(@bdgErrors)
-    element.text((doneFiles.size+failedFiles.size)+"/"+allFiles.size)
-    element.removeClass('badge-success badge-warning icon icon-stop icon-check icon-hourglass')
+    element.removeClass()
     if failedFiles.size > 0
-      if isDone
-        element.addClass('icon icon-stop')
-
-      element.addClass('icon icon-hourglass badge-warning')
+      element.addClass('text-error')
+      element.text(failedFiles.size + ' error(s)')
     else
-      if isDone
-        element.addClass('icon icon-check badge-success')
+      if !isDone
+        element.text('processing...')
       else
-        element.addClass('icon icon-hourglass')
+        element.text('')
 
     @parserStatus.failedFiles = Array.from(failedFiles)
     @parserStatus.failedFiles.sort()
@@ -104,10 +101,6 @@ class GoOutlineView extends View
       end = "</div>"
 
       return start + @parserStatus.failedFiles.map((l) -> 'Parsing failed for '+l).join('<br>') + end
-    else
-      return "Parsing successful"
-
-
 
   initializeButtons: ->
     @showTests = atom.config.get('go-outline.showTests')
