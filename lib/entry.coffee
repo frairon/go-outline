@@ -6,7 +6,8 @@ module.exports = class Entry
     @children = []
 
     @type =null
-    @fileName = null
+    @fileDef = null
+    @filesUsage = new Set()
     @fileLine = -1
     @fileColumn = -1
     @isPublic = false
@@ -30,8 +31,8 @@ module.exports = class Entry
 
 
   getTitle: ->
-    if @fileName? and @fileLine?
-      basename(@fileName)+":"+@fileLine
+    if @fileDef? and @fileLine?
+      basename(@fileDef)+":"+@fileLine
     else
       @name
 
@@ -39,7 +40,9 @@ module.exports = class Entry
 
     # if entry has a receiver
     if child?.Receiver?
-      @getOrCreateChild(child.Receiver).getOrCreateChild(child.Name).updateEntry(child)
+      receiver = @getOrCreateChild(child.Receiver)
+      receiver.getOrCreateChild(child.Name).updateEntry(child)
+      receiver.updateEntry({FileUsage:child.FileName})
     else
       @getOrCreateChild(child.Name).updateEntry(child)
 
@@ -62,6 +65,10 @@ module.exports = class Entry
     )
 
     return sortedChildren
+
+  isTestEntry: ->
+    suffix = 'test.go'
+    return @fileDef? and @fileDef.length != suffix.length and @fileDef.endsWith('test.go')
 
   sortChildren: ->
     @children = @sorter(@children)
@@ -97,7 +104,7 @@ module.exports = class Entry
     if data.Name?
       @name = data.Name
     if data.FileName?
-      @fileName = data.FileName
+      @fileDef = data.FileName
     if data.Line?
       @fileLine = data.Line
     if data.Column?
@@ -106,6 +113,8 @@ module.exports = class Entry
       @isPublic = data.Public
     if data.Elemtype?
       @type = data.Elemtype
+    if data.FileUsage?
+      @filesUsage.add(data.FileUsage)
 
   getTypeRank: ->
     switch @type
@@ -121,7 +130,10 @@ module.exports = class Entry
 
       # child is of the file, the child's name is not in the new list and it does not have any children itself
       # so we'll remove it.
-      if child.fileName == fileName and !(child.name in existingChildNames)
-        @removeChild(child.name)
-        continue
+      if child.fileDef==fileName and !(child.name in existingChildNames)
+        if child.children.length == 0
+          child.filesUsage.delete(fileName)
+        if child.filesUsage.size == 0
+          @removeChild(child.name)
+          continue
       i+= 1

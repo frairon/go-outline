@@ -18,27 +18,53 @@ class GoOutlineView extends View
   @content: ->
     @div class: 'go-outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('go-outline.showOnRightSide'), =>
       @nav class: 'go-outline-navbar', =>
-        @div class: "btn-group", =>
-          @div class: "icon icon-mention", title: "show variables", outlet: 'btnShowVariables'
-          @div class: "icon icon-gist-secret", title: "show private symbols", outlet: 'btnShowPrivate'
-          @div class: "icon icon-bug", title: "show test functions", outlet: 'btnShowTests'
-          @div class: "icon", " "
-          @div class: "icon icon-gist-fork", title: "show tree go-outline", outlet: 'btnShowTree'
-          @div class: "icon icon-link", title: "link go-outline with tree view", outlet: 'btnLinkFile'
-          @div class: "icon icon-chevron-up", title: "collapse all", outlet: 'btnCollapse'
-          @div class: "icon icon-chevron-down", title: "expand all", outlet: 'btnExpand'
-        @div class: "go-outline-search", =>
-          @subview 'searchField', new TextEditorView({mini: true, placeholderText:"filter"})
-          @div class: "icon icon-x", outlet: 'btnResetFilter'
+        @div class: 'go-outline-nav', =>
+          @div class: 'go-outline-views', =>
+            @button class: 'btn selected icon icon-file-directory inline-block-tight', outlet: 'tabFileView', 'file'
+            @button class: 'btn icon icon-file-text inline-block-tight', outlet: 'tabPackageView', 'package'
+          @div class: 'go-outline-options', =>
+            @button class: 'go-outline-btn-options btn icon icon-three-bars', title: 'Options', outlet: 'btnOptions'
+            @div class: 'go-outline-options-popover select-list popover-list hidden', outlet: 'menu', =>
+              @ol class: 'list-group', =>
+                @li class: '', 'show variables', outlet:'btnShowVariables'
+                @li class: '', 'show private symbols', outlet: 'btnShowPrivate'
+                @li class: '', 'show test symbols', outlet: 'btnShowTests'
+                @li class: '', 'show as tree', outlet: 'btnShowTree'
+                @li class: '', 'Link go-outline with editor', outlet: 'btnLinkFile'
+        @div class: 'go-outline-search', =>
+          @subview 'searchField', new TextEditorView({mini: true, placeholderText:'filter'})
+          @div class: 'icon icon-x', outlet: 'btnResetFilter'
+        @div class: 'go-outline-status', =>
+          @div class: 'icon icon-chevron-up', title: 'collapse all', outlet: 'btnCollapse'
+          @div class: 'icon icon-chevron-down', title: 'expand all', outlet: 'btnExpand'
+          @span outlet: 'bdgErrors'
       @div class: 'go-outline-tree-scroller order--center', outlet: 'scroller', =>
         @ol class: 'go-outline-tree full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
       @div class: 'go-outline-tree-resize-handle', outlet: 'resizeHandle'
 
-  setSelected: (element, selected) ->
-    if selected
+  setOptionActive: (element, active) ->
+    if active
+      $(element).addClass("icon icon-check")
+    else
+      $(element).removeClass("icon icon-check")
+
+  setOptionEnabled: (element, enabled) ->
+    if enabled
+      $(element).addClass("status status-ignored")
+    else
+      $(element).removeClass("status status-ignored")
+
+  setButtonEnabled: (element, enabled) ->
+    if enabled
       $(element).addClass("selected")
     else
       $(element).removeClass("selected")
+
+  setButtonVisibility: (element, enabled) ->
+    if enabled
+      $(element).removeClass("hidden")
+    else
+      $(element).addClass("hidden")
 
   initialize: (serializeState) ->
 
@@ -56,9 +82,49 @@ class GoOutlineView extends View
     @currentDir = null;
     @container = @list[0]
 
+    @parserStatus=
+      isDone:true
+      failedFiles:[]
+
     @filterTimeout = null
     @initializeButtons()
     @handleEvents()
+
+  setParserStatus: (allFiles=[], doneFiles=[], failedFiles=[]) =>
+    # updates the parser status indicator badge
+    # @param all: list/set of all files being parsed
+    # @param doneFiles: list/set of all files where parsing is done
+    # @param status: busy, success, failure
+    # @param failedFiles: list of strings of files where parser failed
+    allFiles = new Set(allFiles)
+    doneFiles = new Set(doneFiles)
+    failedFiles = new Set(failedFiles)
+
+    isDone = (failedFiles.size + doneFiles.size) >= allFiles.size
+
+    element = $(@bdgErrors)
+    element.removeClass()
+    if failedFiles.size > 0
+      element.addClass('text-error')
+      element.text(failedFiles.size + ' error(s)')
+    else
+      if !isDone
+        element.text('processing...')
+      else
+        element.text('')
+
+    @parserStatus.failedFiles = Array.from(failedFiles)
+    @parserStatus.failedFiles.sort()
+    @parserStatus.isDone=isDone
+
+
+  parserStatusTooltip: =>
+    start =  "<div class='tooltip-arrow'></div>
+    <div class='tooltip-inner'>"
+    end = "</div>"
+    if @parserStatus.failedFiles.length > 0
+      return start + @parserStatus.failedFiles.map((l) -> 'Parsing failed for '+l).join('<br>') + end
+    return start + end
 
   initializeButtons: ->
     @showTests = atom.config.get('go-outline.showTests')
@@ -66,39 +132,79 @@ class GoOutlineView extends View
     @showVariables = atom.config.get('go-outline.showVariables')
     @showTree = atom.config.get('go-outline.showTree')
     @linkFile = atom.config.get('go-outline.linkFile')
+    @currentView = atom.config.get('go-outline.currentView')
 
-    @setSelected(@btnShowVariables, @showVariables)
-    @setSelected(@btnShowTests, @showTests)
-    @setSelected(@btnShowPrivate, @showPrivate)
-    @setSelected(@btnShowTree, @showTree)
-    @setSelected(@btnCollapse, @showTree)
-    @setSelected(@btnExpand, @showTree)
-    @setSelected(@btnLinkFile, @linkFile)
+    updateViewTabs = =>
+      @setButtonEnabled(@tabFileView, @currentView == 'file')
+      @setButtonEnabled(@tabPackageView, @currentView == 'package')
 
+    updateViewTabs()
+
+    updateButtons = =>
+      @setOptionActive(@btnShowTree, @showTree)
+      @setButtonVisibility(@btnCollapse, @showTree)
+      @setButtonVisibility(@btnExpand, @showTree)
+      @setOptionActive(@btnShowPrivate, @showPrivate)
+      @setOptionActive(@btnShowTests, @showTests)
+      @setOptionActive(@btnShowVariables, @showVariables)
+      @setOptionActive(@btnLinkFile, @linkFile)
+
+    updateButtons()
+
+    atom.tooltips.add(@bdgErrors, {title:@parserStatusTooltip})
 
     @subscribeTo(@btnShowTree[0], { 'click': (e) =>
       @showTree = !@showTree
-      @setSelected(@btnShowTree, @showTree)
-      @setSelected(@btnCollapse, @showTree)
-      @setSelected(@btnExpand, @showTree)
+      updateButtons()
       @updateSymbolList(@currentFolder())
     })
 
     @subscribeTo(@btnShowPrivate[0], { 'click': (e) =>
       @showPrivate = !@showPrivate
-      @setSelected(@btnShowPrivate, @showPrivate)
+      updateButtons()
       @updateSymbolList(@currentFolder())
     })
 
     @subscribeTo(@btnShowTests[0], { 'click': (e) =>
       @showTests = !@showTests
-      @setSelected(@btnShowTests, @showTests)
+      updateButtons()
       @updateSymbolList(@currentFolder())
+    })
+
+    @showMenu = false
+
+    updateMenu = =>
+      if @showMenu
+        $(@menu[0]).removeClass('hidden')
+      else
+        $(@menu[0]).addClass('hidden')
+
+
+    @subscribeTo(@btnOptions[0], {'click': (e) =>
+      @showMenu = !@showMenu
+      updateMenu()
+    })
+
+    @subscribeTo(@menu[0], {'mouseleave': (e) =>
+      @showMenu = false
+      updateMenu()
     })
 
     @subscribeTo(@btnShowVariables[0], { 'click': (e) =>
       @showVariables = !@showVariables
-      @setSelected(@btnShowVariables, @showVariables)
+      updateButtons()
+      @updateSymbolList(@currentFolder())
+    })
+
+    @subscribeTo(@tabFileView[0], { 'click': (e) =>
+      @currentView = 'file'
+      updateViewTabs()
+      @updateSymbolList(@currentFolder())
+    })
+
+    @subscribeTo(@tabPackageView[0], { 'click': (e) =>
+      @currentView = 'package'
+      updateViewTabs()
       @updateSymbolList(@currentFolder())
     })
 
@@ -118,7 +224,7 @@ class GoOutlineView extends View
 
     @subscribeTo(@btnLinkFile[0], { 'click': (e) =>
       @linkFile = !@linkFile
-      @setSelected(@btnLinkFile, @linkFile)
+      updateButtons()
       if @linkFile
         @onActivePaneChange(atom.workspace.getActiveTextEditor())
     })
@@ -184,6 +290,7 @@ class GoOutlineView extends View
     atom.config.set 'go-outline.showPrivates', @showPrivate
     atom.config.set 'go-outline.showTree', @showTree
     atom.config.set 'go-outline.showVariables', @showVariables
+    atom.config.set 'go-outline.currentView', @currentView
     atom.config.set 'go-outline.linkFile', @linkFile
 
     @detach()
@@ -256,8 +363,12 @@ class GoOutlineView extends View
     folderPath = helpers.dirname(filePath)
     file = helpers.basename(filePath)
 
-    return unless folderPath != @currentDir
-
+    if folderPath == @currentDir
+      if @currentView == "file"
+        @updateSymbolList(@currentFolder())
+        return
+      else
+        return
 
     # invalid
     if !folderPath.length || !file.length
@@ -272,6 +383,7 @@ class GoOutlineView extends View
     if !@folders[folderPath]?
       folder = new Folder(folderPath)
       folder.setUpdateCallback(@updateSymbolList)
+      folder.setParserStatusCallback(@setParserStatus)
 
       @folders[folderPath] = folder
 
@@ -282,13 +394,13 @@ class GoOutlineView extends View
     @currentDir = folderPath
 
   jumpToEntry: (item) ->
-    return false unless item.fileName?
+    return false unless item.fileDef?
     options =
       searchAllPanes: true
       initialLine: (item.fileLine-1) if item?.fileLine
       initialColumn:  (item.fileColumn-1) if item?.fileColumn
-    if item?.fileName
-      atom.workspace.open(item.fileName, options).then (editor) =>
+    if item?.fileDef
+      atom.workspace.open(item.fileDef, options).then (editor) =>
         if options.initialLine?
           editor.scrollToBufferPosition([options.initialLine, options.initialColumn], {center:true}) #markBufferRange(
           @flash(editor, [[options.initialLine, 0], [options.initialLine, 100]])
@@ -329,6 +441,12 @@ class GoOutlineView extends View
     for entryType, styleClasses of entryStyleClasses
       expanderIcon.filter((d)-> d.type is entryType).classed(styleClasses, true)
 
+    currentPath = @getPath()
+    if @currentView == 'file'
+      expanderIcon.filter((d) -> d.type != "package" and d.fileDef != currentPath).classed("implicit-parent", true)
+    #else
+    #  expanderIcon.filter((d) -> d.type != "package" and d.fileDef == currentPath).classed("current-file-symbol", true)
+
     expanderIcon.text((d)=>
       if @flatOutline()
         d.getIdentifier()
@@ -343,7 +461,6 @@ class GoOutlineView extends View
     )
 
   filterChildren: (children) =>
-
     return _.filter(children, (c) =>
 
       searcher = (c) -> true
@@ -355,10 +472,10 @@ class GoOutlineView extends View
           return _.every(needles, (n) ->
             lowName.indexOf(n) > -1
             )
-
       return (
             (@showVariables or c.type isnt "variable") and
-            (@showTests or c.type isnt "func" or not c.name.startsWith("Test")) and
+            (@showTests or c.type is "package" or not c.isTestEntry()) and
+            (@currentView == "package" or c.fileDef == @getPath() or c.filesUsage.has(@getPath())) and
             (@showPrivate or c.isPublic) and
             (!@filterText or searcher(c))
           )
@@ -371,6 +488,7 @@ class GoOutlineView extends View
 
 
   updateSymbolList: (folder) =>
+    return unless folder?
 
     outlineView = @
 

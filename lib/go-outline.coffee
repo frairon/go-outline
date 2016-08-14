@@ -11,6 +11,9 @@ module.exports =
     showVariables:
       type: 'boolean'
       default: true
+    currentView:
+      type: 'string'
+      default: 'file'
     showTree:
       type: 'boolean'
       default: true

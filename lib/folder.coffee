@@ -23,6 +23,8 @@ module.exports = class Folder
 
   setUpdateCallback: (@updateCallback) ->
 
+  setParserStatusCallback: (@parserStatusCallback) ->
+
   getPackages: ->
     return _.values(@packages)
 
@@ -38,32 +40,57 @@ module.exports = class Folder
     catch error
       names = []
 
+    # ignore non-go-files
+    names = _.filter(names, (x) -> x.endsWith '.go')
+
     files = []
     promises = []
+    @parserStatusCallback(names, [], [])
+
+    doneFiles = new Set()
+    failedFiles = new Set()
     for name in names
-      # ignore non-go-files
-      continue if !name.endsWith '.go'
+      result = @parseFile(name)
 
-      # check stats of file, load symlinks etc.
-      fullPath = path.join(@path, name)
-      stat = fs.statSync(fullPath)
-      stat = fs.lstatSync(fullPath) if stat.isSymbolicLink?()
-      continue if stat.isDirectory?()
-      continue if !stat.isFile?()
-
-      # file stats exist, and file is not newer -> has not changed
-      if fullPath of @fileStats && @fileStats[fullPath].mtime.getTime() >= stat.mtime.getTime()
-          continue
-
-      @fileStats[fullPath] = stat
-      promises.push(@reparseFile(fullPath))
+      if result?
+        f = (n) =>
+          result.then((code)=>
+            if code == 0
+              doneFiles.add(n)
+            else
+              failedFiles.add(n)
+            @parserStatusCallback(names, doneFiles, failedFiles)
+            )
+          promises.push(result)
+        f(name)
+      else
+        # if the result was no promise, the file was ignored
+        # meaning it was not updated or different type, so we count a success
+        doneFiles.add(name)
 
     Promise.all(promises).then(=>
+      @parserStatusCallback(names, doneFiles, failedFiles)
       for pkgName, pkg of @packages
         pkg.sortChildren()
       @updateCallback(@)
-      )
+    )
 
+  parseFile: (name) ->
+
+    # check stats of file, load symlinks etc.
+    fullPath = path.join(@path, name)
+    stat = fs.statSync(fullPath)
+    stat = fs.lstatSync(fullPath) if stat.isSymbolicLink?()
+    if stat.isDirectory?() or !stat.isFile?()
+      return null
+
+    # file stats exist, and file is not newer -> has not changed
+    if fullPath of @fileStats && @fileStats[fullPath].mtime.getTime() >= stat.mtime.getTime()
+        return null
+
+    @fileStats[fullPath] = stat
+
+    return @reparseFile(fullPath)
 
   reparseFile: (filePath)->
     out = []
@@ -78,20 +105,21 @@ module.exports = class Folder
           resolve(code)
         })
       proc.onWillThrowError((c) ->
-        console.log "Error executing go-parser-outline", c.error
         c.handle()
       )
 
       return proc
-      ).then (code) =>
-          return unless code is 0
+    ).then (code) =>
+      return code unless code is 0
 
-          try
-            @updatePackage(out.join("\n"))
-          catch error
-            console.log "Error creating outline from parser-output", error, out
+      try
+        @updatePackage(out.join("\n"))
+      catch error
+        console.log "Error creating outline from parser-output", error, out
+      finally
+        return code
 
-      return promise
+    return promise
 
   updatePackage: (parserOutput) ->
     parsed = JSON.parse parserOutput
