@@ -66,6 +66,10 @@ module.exports = class Entry
 
     return sortedChildren
 
+  isTestEntry: ->
+    suffix = 'test.go'
+    return @fileDef? and @fileDef.length != suffix.length and @fileDef.endsWith('test.go')
+
   sortChildren: ->
     @children = @sorter(@children)
 
