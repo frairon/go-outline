@@ -18,6 +18,8 @@ class GoOutlineView extends View
   @content: ->
     @div class: 'go-outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('go-outline.showOnRightSide'), =>
       @nav class: 'go-outline-navbar', =>
+        @div =>
+          @span outlet: 'bdgErrors'
         @div class: "go-outline-nav", =>
           @div class: "go-outline-views", =>
             @button class: "btn selected icon icon-file-directory inline-block-tight", outlet: 'tabFileView', "file"
@@ -76,9 +78,49 @@ class GoOutlineView extends View
     @currentDir = null;
     @container = @list[0]
 
+    @parserStatus=
+      isDone:true
+      failedFiles:[]
+
     @filterTimeout = null
     @initializeButtons()
     @handleEvents()
+
+  setParserStatus: (allFiles=[], doneFiles=[], failedFiles=[]) =>
+    # updates the parser status indicator badge
+    # @param all: list/set of all files being parsed
+    # @param doneFiles: list/set of all files where parsing is done
+    # @param status: busy, success, failure
+    # @param failedFiles: list of strings of files where parser failed
+    allFiles = new Set(allFiles)
+    doneFiles = new Set(doneFiles)
+    failedFiles = new Set(failedFiles)
+
+    isDone = (failedFiles.size + doneFiles.size) >= allFiles.size
+
+    element = $(@bdgErrors)
+    element.removeClass()
+    if failedFiles.size > 0
+      element.addClass('text-error')
+      element.text(failedFiles.size + ' error(s)')
+    else
+      if !isDone
+        element.text('processing...')
+      else
+        element.text('')
+
+    @parserStatus.failedFiles = Array.from(failedFiles)
+    @parserStatus.failedFiles.sort()
+    @parserStatus.isDone=isDone
+
+
+  parserStatusTooltip: =>
+    if @parserStatus.failedFiles.length > 0
+      start =  "<div class='tooltip-arrow'></div>
+    <div class='tooltip-inner'>"
+      end = "</div>"
+
+      return start + @parserStatus.failedFiles.map((l) -> 'Parsing failed for '+l).join('<br>') + end
 
   initializeButtons: ->
     @showTests = atom.config.get('go-outline.showTests')
@@ -110,6 +152,7 @@ class GoOutlineView extends View
       @setOptionActive(@btnShowVariables, @showVariables)
       @setOptionActive(@btnLinkFile, @linkFile)
 
+    atom.tooltips.add(@bdgErrors, {title:@parserStatusTooltip})
 
     @subscribeTo(@btnShowTree[0], { 'click': (e) =>
       @showTree = !@showTree
@@ -341,6 +384,7 @@ class GoOutlineView extends View
     if !@folders[folderPath]?
       folder = new Folder(folderPath)
       folder.setUpdateCallback(@updateSymbolList)
+      folder.setParserStatusCallback(@setParserStatus)
 
       @folders[folderPath] = folder
 
