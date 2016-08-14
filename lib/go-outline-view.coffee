@@ -18,28 +18,26 @@ class GoOutlineView extends View
   @content: ->
     @div class: 'go-outline-tree-resizer tool-panel', 'data-show-on-right-side': atom.config.get('go-outline.showOnRightSide'), =>
       @nav class: 'go-outline-navbar', =>
-        @div =>
+        @div class: 'go-outline-nav', =>
+          @div class: 'go-outline-views', =>
+            @button class: 'btn selected icon icon-file-directory inline-block-tight', outlet: 'tabFileView', 'file'
+            @button class: 'btn icon icon-file-text inline-block-tight', outlet: 'tabPackageView', 'package'
+          @div class: 'go-outline-options', =>
+            @button class: 'go-outline-btn-options btn icon icon-three-bars', title: 'Options', outlet: 'btnOptions'
+            @div class: 'go-outline-options-popover select-list popover-list hidden', outlet: 'menu', =>
+              @ol class: 'list-group', =>
+                @li class: '', 'show variables', outlet:'btnShowVariables'
+                @li class: '', 'show private symbols', outlet: 'btnShowPrivate'
+                @li class: '', 'show test symbols', outlet: 'btnShowTests'
+                @li class: '', 'show as tree', outlet: 'btnShowTree'
+                @li class: '', 'Link go-outline with editor', outlet: 'btnLinkFile'
+        @div class: 'go-outline-search', =>
+          @subview 'searchField', new TextEditorView({mini: true, placeholderText:'filter'})
+          @div class: 'icon icon-x', outlet: 'btnResetFilter'
+        @div class: 'go-outline-status', =>
+          @div class: 'icon icon-chevron-up', title: 'collapse all', outlet: 'btnCollapse'
+          @div class: 'icon icon-chevron-down', title: 'expand all', outlet: 'btnExpand'
           @span outlet: 'bdgErrors'
-        @div class: "go-outline-nav", =>
-          @div class: "go-outline-views", =>
-            @button class: "btn selected icon icon-file-directory inline-block-tight", outlet: 'tabFileView', "file"
-            @button class: "btn icon icon-file-text inline-block-tight", outlet: 'tabPackageView', "package"
-          @div class: "go-outline-options", =>
-            @button class: "btn", outlet: 'btnOptions', "options"
-            @div class: "go-outline-options-popover select-list popover-list hidden", outlet: "menu", =>
-              @h3 class:"block test-highlight", "Display Options"
-              @ol class: "list-group", =>
-                @li class: "", "show variables", outlet:"btnShowVariables"
-                @li class: "", "show private symbols", outlet: 'btnShowPrivate'
-                @li class: "", "show test symbols", outlet: 'btnShowTests'
-                @li class: "", "show as tree", outlet: 'btnShowTree'
-                @li class: "", "Link go-outline with editor", outlet: 'btnLinkFile'
-        @div class: "go-outline-search", =>
-          @subview 'searchField', new TextEditorView({mini: true, placeholderText:"filter"})
-          @div class: "icon icon-x", outlet: 'btnResetFilter'
-        @div class: "go-outline-collapse", =>
-            @div class: "icon icon-chevron-up", title: "collapse all", outlet: 'btnCollapse'
-            @div class: "icon icon-chevron-down", title: "expand all", outlet: 'btnExpand'
       @div class: 'go-outline-tree-scroller order--center', outlet: 'scroller', =>
         @ol class: 'go-outline-tree full-menu list-tree has-collapsable-children focusable-panel', tabindex: -1, outlet: 'list'
       @div class: 'go-outline-tree-resize-handle', outlet: 'resizeHandle'
@@ -61,6 +59,12 @@ class GoOutlineView extends View
       $(element).addClass("selected")
     else
       $(element).removeClass("selected")
+
+  setButtonVisibility: (element, enabled) ->
+    if enabled
+      $(element).removeClass("hidden")
+    else
+      $(element).addClass("hidden")
 
   initialize: (serializeState) ->
 
@@ -115,12 +119,12 @@ class GoOutlineView extends View
 
 
   parserStatusTooltip: =>
-    if @parserStatus.failedFiles.length > 0
-      start =  "<div class='tooltip-arrow'></div>
+    start =  "<div class='tooltip-arrow'></div>
     <div class='tooltip-inner'>"
-      end = "</div>"
-
+    end = "</div>"
+    if @parserStatus.failedFiles.length > 0
       return start + @parserStatus.failedFiles.map((l) -> 'Parsing failed for '+l).join('<br>') + end
+    return start + end
 
   initializeButtons: ->
     @showTests = atom.config.get('go-outline.showTests')
@@ -130,27 +134,22 @@ class GoOutlineView extends View
     @linkFile = atom.config.get('go-outline.linkFile')
     @currentView = atom.config.get('go-outline.currentView')
 
-    @setOptionActive(@btnShowVariables, @showVariables)
-    @setOptionActive(@btnShowTests, @showTests)
-    @setOptionActive(@btnShowPrivate, @showPrivate)
-    @setOptionActive(@btnShowTree, @showTree)
-    @setOptionActive(@btnLinkFile, @linkFile)
-
     updateViewTabs = =>
       @setButtonEnabled(@tabFileView, @currentView == 'file')
       @setButtonEnabled(@tabPackageView, @currentView == 'package')
 
     updateViewTabs()
 
-
     updateButtons = =>
       @setOptionActive(@btnShowTree, @showTree)
-      @setButtonEnabled(@btnCollapse, @showTree)
-      @setButtonEnabled(@btnExpand, @showTree)
+      @setButtonVisibility(@btnCollapse, @showTree)
+      @setButtonVisibility(@btnExpand, @showTree)
       @setOptionActive(@btnShowPrivate, @showPrivate)
       @setOptionActive(@btnShowTests, @showTests)
       @setOptionActive(@btnShowVariables, @showVariables)
       @setOptionActive(@btnLinkFile, @linkFile)
+
+    updateButtons()
 
     atom.tooltips.add(@bdgErrors, {title:@parserStatusTooltip})
 

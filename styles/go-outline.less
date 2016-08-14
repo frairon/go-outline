@@ -16,7 +16,6 @@ atom-text-editor::shadow {
 .go-outline-tree-resizer {
   position: relative;
   height: 100%;
-  cursor: default;
   -webkit-user-select: none;
   min-width: 235px;
   width: 200px;
@@ -107,23 +106,42 @@ atom-text-editor::shadow {
 .go-outline-navbar {
   border-bottom: 1px solid #ccc;
 
-  .go-outline-collapse {
-    float: left;
-    margin-left: 5px;
+  .go-outline-btn-options {
+    &, &:hover {
+      border: none;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    &:hover {
+      color: @text-color-info;
+    }
+  }
+
+  .go-outline-status {
+    margin: 2px 5px 2px 7px;
 
     > .icon {
       display: inline-block;
       padding: 5px 0;
       text-align: center;
+      cursor: pointer;
 
       &:hover {
-        cursor: pointer;
         color: @background-color-selected;
       }
 
       &::before {
         width: 10px;
       }
+    }
+
+    > span {
+      float: right;
+      display: inline-block;
+      padding: 7px 0;
+      font-weight: bold;
+      cursor: help;
     }
   }
 
@@ -141,7 +159,7 @@ atom-text-editor::shadow {
        position: absolute;
        right: -1px;
        top: 10px;
-
+       cursor: pointer;
      }
  }
 
@@ -176,18 +194,21 @@ atom-text-editor::shadow {
    ol.list-group {
       overflow-y: auto;
       overflow-x: auto;
+      margin: 0px;
 
       li {
+       &:hover {
+         background-color: @background-color-selected;
+         color: @text-color-selected;
+         cursor: pointer;
+       }
+
        &:not(.icon)::before {
          width: 16px;
          height: 16px;
          content: "";
          display: inline-block;
-         margin-right: 5px; 
-
-         &:hover {
-           background-color: @background-color-highlight;
-         }
+         margin-right: 5px;
        }
     }
   }
