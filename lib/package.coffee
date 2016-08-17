@@ -1,6 +1,8 @@
 
 Entry = require './entry'
 
+_ = require 'underscore-plus'
+
 module.exports = class Package extends Entry
   constructor: (name)->
     super(name)
@@ -24,3 +26,10 @@ module.exports = class Package extends Entry
 
   expand: ->
     @expandAll(true)
+
+  updateChildrenForFile: (children, file) ->
+    for name, symbol of children
+      symbol.FileName = file
+      @updateChild(symbol)
+
+    @removeRemainingChildren(file, children)

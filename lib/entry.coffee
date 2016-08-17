@@ -21,18 +21,21 @@ module.exports = class Entry
     return @name
 
   getIdentifier: ->
+
+    identifier = @name
     parentName = @parent?.getNameAsParent()
     if parentName?
-      parentName = " (" + parentName + ")"
-    else
-      parentName = ""
+      identifier += " (" + parentName + ")"
 
-    return @name + parentName
+    return identifier
 
 
   getTitle: ->
     if @fileDef? and @fileLine?
       basename(@fileDef)+":"+@fileLine
+
+    if @isImplicitParent()
+      @name + " (definition not found)"
     else
       @name
 
@@ -122,18 +125,38 @@ module.exports = class Entry
       when "type" then 1
       when "func" then 2
 
-  removeRemainingChildren: (fileName, existingChildNames) ->
+  removeRemainingChildren: (fileName, existingChildren) ->
     i=0
+
+    childNames = _.keys(existingChildren)
+
+    for name, child of existingChildren
+      if child.Receiver? and child.Receiver.length > 0 and child.Receiver != @name and @hasChild(name)
+        @removeChild(name)
+
     while i < @children.length
       child = @children[i]
-      r = child.removeRemainingChildren(fileName, existingChildNames)
+      r = child.removeRemainingChildren(fileName, existingChildren)
 
-      # child is of the file, the child's name is not in the new list and it does not have any children itself
-      # so we'll remove it.
-      if child.fileDef==fileName and !(child.name in existingChildNames)
+        # child is of the file, the child's name is not in the new list and it does not have any children itself
+        # so we'll remove it.
+      if child.fileDef==fileName and !(child.name in childNames)
         if child.children.length == 0
           child.filesUsage.delete(fileName)
         if child.filesUsage.size == 0
           @removeChild(child.name)
           continue
+
+        # since we couldn't delete it we'll remove the fileDef
+        child.fileDef = null
+
+      # in case it was an implicit parent (e.g. after renaming), but now all the children are gone,
+      # finally remove it now too.
+      if !child.fileDef? and child.children.length == 0
+        @removeChild(child.name)
+        continue
+
       i+= 1
+
+  isImplicitParent: ->
+    @children.length > 0 and !@fileDef?

@@ -444,6 +444,8 @@ class GoOutlineView extends View
     currentPath = @getPath()
     if @currentView == 'file'
       expanderIcon.filter((d) -> d.type != "package" and d.fileDef != currentPath).classed("implicit-parent", true)
+    else if @currentView == 'package'
+      expanderIcon.filter((d) -> d.type != "package" and d.isImplicitParent()).classed("nonexistent-parent", true)
     #else
     #  expanderIcon.filter((d) -> d.type != "package" and d.fileDef == currentPath).classed("current-file-symbol", true)
 

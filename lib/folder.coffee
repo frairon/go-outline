@@ -113,7 +113,7 @@ module.exports = class Folder
       return code unless code is 0
 
       try
-        @updatePackage(out.join("\n"))
+        @updateFolder(out.join("\n"))
       catch error
         console.log "Error creating outline from parser-output", error, out
       finally
@@ -121,33 +121,37 @@ module.exports = class Folder
 
     return promise
 
-  updatePackage: (parserOutput) ->
+  updateFolder: (parserOutput) ->
     parsed = JSON.parse parserOutput
+    console.log(parsed)
     file = parsed.Filename
     packageName = parsed.Packagename
 
+    pkg = @updatePackage(file, packageName)
+
+    pkg.updateChildrenForFile(parsed.Entries, file)
+
+  updatePackage: (file, packageName) ->
 
     if packageName not of @packages
       @packages[packageName] = new Package(packageName)
 
     pkg = @packages[packageName]
 
+    # add the parsed file to its package and remove it from all the other
+    # packages. This covers the case when the package has been renamed.
     pkg.addFile(file)
     for name, p of @packages
       continue if p is pkg
 
       p.removeFile(file)
 
+    # remove all packages that don't have any files
     for name in _.keys(@packages)
       if not @packages[name].hasFiles()
         delete @packages[name]
 
-
-    for name, symbol of parsed.Entries
-      symbol.FileName = file
-      pkg.updateChild(symbol)
-
-    pkg.removeRemainingChildren(file, _.keys(parsed.Entries))
+    return pkg
 
   expandPackages: () ->
     for pkg in @getPackages()
