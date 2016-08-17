@@ -1,4 +1,4 @@
-# Go Outline
+# [Go Outline](https://atom.io/packages/go-outline) [![Build Status](https://travis-ci.org/frairon/go-outline.svg?branch=master)](https://travis-ci.org/frairon/go-outline)
 Simple outline for golang files.
 
 ![Go Outline Screenshot](https://github.com/frairon/go-outline/blob/master/resources/screenshot.png?raw=true)
