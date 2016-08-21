@@ -1,7 +1,7 @@
 {
   "name": "go-outline",
   "main": "./lib/go-outline",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Displays an outline of symbols for Golang",
   "keywords": [
     "go",
