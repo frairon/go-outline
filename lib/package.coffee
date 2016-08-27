@@ -28,7 +28,8 @@ module.exports = class Package extends Entry
     @expandAll(true)
 
   updateChildrenForFile: (children, file) ->
-    for name, symbol of children
+
+    for symbol in children
       symbol.FileName = file
       @updateChild(symbol)
 

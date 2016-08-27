@@ -24,8 +24,8 @@ module.exports = class Entry
 
     identifier = @name
     parentName = @parent?.getNameAsParent()
-    if parentName?
-      identifier += " (" + parentName + ")"
+    if parentName? and @parent.type != 'package'
+      identifier = parentName + "::" + identifier
 
     return identifier
 
@@ -45,7 +45,6 @@ module.exports = class Entry
     if child?.Receiver?
       receiver = @getOrCreateChild(child.Receiver)
       receiver.getOrCreateChild(child.Name).updateEntry(child)
-      receiver.updateEntry({FileUsage:child.FileName})
     else
       @getOrCreateChild(child.Name).updateEntry(child)
 
@@ -96,6 +95,9 @@ module.exports = class Entry
 
     return child
 
+  hasChildren: ->
+    return @children.length > 0
+
   removeChild: (name) ->
     @children = _.filter(@children, (c) -> c.name isnt name)
 
@@ -116,8 +118,6 @@ module.exports = class Entry
       @isPublic = data.Public
     if data.Elemtype?
       @type = data.Elemtype
-    if data.FileUsage?
-      @filesUsage.add(data.FileUsage)
 
   getTypeRank: ->
     switch @type
@@ -125,30 +125,35 @@ module.exports = class Entry
       when "type" then 1
       when "func" then 2
 
+  usageFiles: ->
+    return _.pluck(@children, "fileDef").length
+
   removeRemainingChildren: (fileName, existingChildren) ->
     i=0
 
-    childNames = _.keys(existingChildren)
+    # filter the existing children for the children that are assigned to me.
+    # I don't have a parent, that means I'm a package
+    if !@parent?
+      # so my children don't have a receiver
+      myChildFilter = (c) => !c.Receiver? and c.FileName == fileName
+    else
+      # otherwise I must be their receiver
+      myChildFilter = (c) => c.Receiver == @name and c.FileName == fileName
 
-    for name, child of existingChildren
-      if child.Receiver? and child.Receiver.length > 0 and child.Receiver != @name and @hasChild(name)
-        @removeChild(name)
+    myChildren = _.pluck(_.filter(existingChildren, myChildFilter), 'Name')
 
     while i < @children.length
       child = @children[i]
-      r = child.removeRemainingChildren(fileName, existingChildren)
+      child.removeRemainingChildren(fileName, existingChildren)
 
-        # child is of the file, the child's name is not in the new list and it does not have any children itself
-        # so we'll remove it.
-      if child.fileDef==fileName and !(child.name in childNames)
-        if child.children.length == 0
-          child.filesUsage.delete(fileName)
-        if child.filesUsage.size == 0
+      # the child was defined in this file, but is not anymore and doesn't have any children.
+      if child.fileDef==fileName and child.name not in myChildren
+        if !child.hasChildren()
           @removeChild(child.name)
           continue
-
-        # since we couldn't delete it we'll remove the fileDef
-        child.fileDef = null
+        else # it still has children, so let's remove the definition
+          # since we couldn't delete it we'll remove the fileDef
+          child.fileDef = null
 
       # in case it was an implicit parent (e.g. after renaming), but now all the children are gone,
       # finally remove it now too.
@@ -159,4 +164,4 @@ module.exports = class Entry
       i+= 1
 
   isImplicitParent: ->
-    @children.length > 0 and !@fileDef?
+    @hasChildren() and !@fileDef?
