@@ -11,6 +11,9 @@ module.exports =
     showVariables:
       type: 'boolean'
       default: true
+    showInterfaces:
+      type: 'boolean'
+      default: true
     viewMode:
       type: 'string'
       default: 'file'

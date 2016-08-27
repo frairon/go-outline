@@ -27,6 +27,7 @@ class GoOutlineView extends View
             @div class: 'go-outline-options-popover select-list popover-list hidden', outlet: 'menu', =>
               @ol class: 'list-group', =>
                 @li class: '', 'show variables', outlet:'btnShowVariables'
+                @li class: '', 'show interfaces', outlet:'btnShowInterfaces'
                 @li class: '', 'show private symbols', outlet: 'btnShowPrivate'
                 @li class: '', 'show test symbols', outlet: 'btnShowTests'
                 @li class: '', 'show as tree', outlet: 'btnShowTree'
@@ -130,6 +131,7 @@ class GoOutlineView extends View
     @showTests = atom.config.get('go-outline.showTests')
     @showPrivate = atom.config.get('go-outline.showPrivates')
     @showVariables = atom.config.get('go-outline.showVariables')
+    @showInterfaces = atom.config.get('go-outline.showInterfaces')
     @showTree = atom.config.get('go-outline.showTree')
     @linkFile = atom.config.get('go-outline.linkFile')
     @viewMode = atom.config.get('go-outline.viewMode')
@@ -150,6 +152,7 @@ class GoOutlineView extends View
       @setOptionActive(@btnShowPrivate, @showPrivate)
       @setOptionActive(@btnShowTests, @showTests)
       @setOptionActive(@btnShowVariables, @showVariables)
+      @setOptionActive(@btnShowInterfaces, @showInterfaces)
       @setOptionActive(@btnLinkFile, @linkFile)
 
     updateButtons()
@@ -195,6 +198,12 @@ class GoOutlineView extends View
 
     @subscribeTo(@btnShowVariables[0], { 'click': (e) =>
       @showVariables = !@showVariables
+      updateButtons()
+      @updateSymbolList(@currentFolder())
+    })
+
+    @subscribeTo(@btnShowInterfaces[0], { 'click': (e) =>
+      @showInterfaces = !@showInterfaces
       updateButtons()
       @updateSymbolList(@currentFolder())
     })
@@ -293,6 +302,7 @@ class GoOutlineView extends View
     atom.config.set 'go-outline.showPrivates', @showPrivate
     atom.config.set 'go-outline.showTree', @showTree
     atom.config.set 'go-outline.showVariables', @showVariables
+    atom.config.set 'go-outline.showInterfaces', @showInterfaces
     atom.config.set 'go-outline.viewMode', @viewMode
     atom.config.set 'go-outline.linkFile', @linkFile
 
@@ -481,6 +491,7 @@ class GoOutlineView extends View
       return (
             (@showVariables or c.type isnt "variable") and
             (@showTests or c.type is "package" or not c.isTestEntry()) and
+            (@showInterfaces or c.type isnt "interface") and
             (@viewMode == "package" or c.fileDef == @getPath() or c.filesUsage.has(@getPath())) and
             (@showPrivate or c.isPublic) and
             (!@filterText or searcher(c))
