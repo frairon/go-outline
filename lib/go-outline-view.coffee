@@ -127,7 +127,9 @@ class GoOutlineView extends View
       return start + @parserStatus.failedFiles.map((l) -> 'Parsing failed for '+l).join('<br>') + end
     return start + end
 
-  initializeButtons: ->
+  getParserExecutable: -> atom.config.get('go-outline.parserExecutable')
+
+  reloadByConfiguration: ->
     @showTests = atom.config.get('go-outline.showTests')
     @showPrivate = atom.config.get('go-outline.showPrivates')
     @showVariables = atom.config.get('go-outline.showVariables')
@@ -135,45 +137,61 @@ class GoOutlineView extends View
     @showTree = atom.config.get('go-outline.showTree')
     @linkFile = atom.config.get('go-outline.linkFile')
     @viewMode = atom.config.get('go-outline.viewMode')
-    @parserExecutable = atom.config.get('go-outline.parserExecutable')
 
-    console.log("Using parser executable", @parserExecutable)
+  updateViewTabs: ->
+    @setButtonEnabled(@tabFileView, @viewMode == 'file')
+    @setButtonEnabled(@tabPackageView, @viewMode == 'package')
 
-    updateViewTabs = =>
-      @setButtonEnabled(@tabFileView, @viewMode == 'file')
-      @setButtonEnabled(@tabPackageView, @viewMode == 'package')
+  updateButtons: ->
+    @setOptionActive(@btnShowTree, @showTree)
+    @setButtonVisibility(@btnCollapse, @showTree)
+    @setButtonVisibility(@btnExpand, @showTree)
+    @setOptionActive(@btnShowPrivate, @showPrivate)
+    @setOptionActive(@btnShowTests, @showTests)
+    @setOptionActive(@btnShowVariables, @showVariables)
+    @setOptionActive(@btnShowInterfaces, @showInterfaces)
+    @setOptionActive(@btnLinkFile, @linkFile)
 
-    updateViewTabs()
+  observeConfigChanges: ->
+    onChange = =>
+      @reloadByConfiguration()
+      @updateViewTabs()
+      @updateButtons()
 
-    updateButtons = =>
-      @setOptionActive(@btnShowTree, @showTree)
-      @setButtonVisibility(@btnCollapse, @showTree)
-      @setButtonVisibility(@btnExpand, @showTree)
-      @setOptionActive(@btnShowPrivate, @showPrivate)
-      @setOptionActive(@btnShowTests, @showTests)
-      @setOptionActive(@btnShowVariables, @showVariables)
-      @setOptionActive(@btnShowInterfaces, @showInterfaces)
-      @setOptionActive(@btnLinkFile, @linkFile)
+    atom.config.observe('go-outline.showTests', onChange)
+    atom.config.observe('go-outline.showPrivates', onChange)
+    atom.config.observe('go-outline.showVariables', onChange)
+    atom.config.observe('go-outline.showInterfaces', onChange)
+    atom.config.observe('go-outline.showTree', onChange)
+    atom.config.observe('go-outline.linkFile', onChange)
+    atom.config.observe('go-outline.parserExecutable', onChange)
+    atom.config.observe('go-outline.viewMode', onChange)
 
-    updateButtons()
+  initializeButtons: ->
+
+    @reloadByConfiguration()
+    @updateViewTabs()
+    @updateButtons()
+    @observeConfigChanges()
+
 
     atom.tooltips.add(@bdgErrors, {title:@parserStatusTooltip})
 
     @subscribeTo(@btnShowTree[0], { 'click': (e) =>
       @showTree = !@showTree
-      updateButtons()
+      @updateButtons()
       @updateSymbolList(@currentFolder())
     })
 
     @subscribeTo(@btnShowPrivate[0], { 'click': (e) =>
       @showPrivate = !@showPrivate
-      updateButtons()
+      @updateButtons()
       @updateSymbolList(@currentFolder())
     })
 
     @subscribeTo(@btnShowTests[0], { 'click': (e) =>
       @showTests = !@showTests
-      updateButtons()
+      @updateButtons()
       @updateSymbolList(@currentFolder())
     })
 
@@ -198,25 +216,25 @@ class GoOutlineView extends View
 
     @subscribeTo(@btnShowVariables[0], { 'click': (e) =>
       @showVariables = !@showVariables
-      updateButtons()
+      @updateButtons()
       @updateSymbolList(@currentFolder())
     })
 
     @subscribeTo(@btnShowInterfaces[0], { 'click': (e) =>
       @showInterfaces = !@showInterfaces
-      updateButtons()
+      @updateButtons()
       @updateSymbolList(@currentFolder())
     })
 
     @subscribeTo(@tabFileView[0], { 'click': (e) =>
       @viewMode = 'file'
-      updateViewTabs()
+      @updateViewTabs()
       @updateSymbolList(@currentFolder())
     })
 
     @subscribeTo(@tabPackageView[0], { 'click': (e) =>
       @viewMode = 'package'
-      updateViewTabs()
+      @updateViewTabs()
       @updateSymbolList(@currentFolder())
     })
 
@@ -236,7 +254,7 @@ class GoOutlineView extends View
 
     @subscribeTo(@btnLinkFile[0], { 'click': (e) =>
       @linkFile = !@linkFile
-      updateButtons()
+      @updateButtons()
       if @linkFile
         @onActivePaneChange(atom.workspace.getActiveTextEditor())
     })
@@ -394,7 +412,7 @@ class GoOutlineView extends View
 
     # if package for folder does not exist, create it
     if !@folders[folderPath]?
-      folder = new Folder(folderPath, @parserExecutable)
+      folder = new Folder(folderPath, @getParserExecutable)
       folder.setUpdateCallback(@updateSymbolList)
       folder.setParserStatusCallback(@setParserStatus)
 

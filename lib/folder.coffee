@@ -17,7 +17,7 @@ module.exports = class Folder
   @oldParserWarningShown: false
   @parserErrorShown: false
 
-  constructor: (@path, @parserExecutable) ->
+  constructor: (@path, @getParserExecutable) ->
     @packages = {}
 
     @fileStats = {}
@@ -99,9 +99,10 @@ module.exports = class Folder
 
   reparseFile: (filePath)->
     out = []
+    parserExecutable = @getParserExecutable()
     promise = new Promise((resolve, reject) =>
       proc = new BufferedProcess({
-        command: @parserExecutable,
+        command: parserExecutable,
         args: ['-f', filePath],
         stdout: (data) =>
           out.push(data)
