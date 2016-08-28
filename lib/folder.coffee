@@ -141,12 +141,19 @@ module.exports = class Folder
 
   updateFolder: (parserOutput) ->
     parsed = JSON.parse parserOutput
-    console.log parsed.Entries, typeof parsed.Entries, parsed.Entries instanceof Array
-    if parsed.Entries not instanceof Array and not Folder.oldParserWarningShown
-      atom.notifications.addInfo("Update go-outline-parser",
-                                    {detail: "It seems like you're using an outdated version of go-outline. Update to get more features/bugfixes.",
-                                    dismissable: true})
-      Folder.oldParserWarningShown = true
+
+    if parsed.Entries not instanceof Array
+
+      # for the first time this happens per session
+      # show a warning to update go-outline-parser
+      if not Folder.oldParserWarningShown
+        atom.notifications.addInfo("Update go-outline-parser",
+                                      {detail: "It seems like you're using an outdated version of go-outline.\nUpdate to get more features/bugfixes.",
+                                      dismissable: true})
+        Folder.oldParserWarningShown = true
+
+      # convert it to a list anyway to be backwards compatible
+      parsed.Entries = _.values(parsed.Entries)
     file = parsed.Filename
     packageName = parsed.Packagename
 
