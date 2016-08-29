@@ -36,13 +36,13 @@ describe "Entry", ->
       Elemtype: "function"
 
 
-    p.updateChildrenForFile({'A':A, 'B': B}, "fileA")
+    p.updateChildrenForFile([A, B], "fileA")
 
     expect(p.hasChild("A")).toBeTruthy()
     expect(p.children[0].hasChild("B")).toBeTruthy()
 
     A.Name = "newA"
-    p.updateChildrenForFile({'newA':A, 'B': B}, "fileA")
+    p.updateChildrenForFile([A, B], "fileA")
 
     expect(p.hasChild("A")).toBeTruthy()
     expect(p.getChild("A").isImplicitParent()).toBeTruthy()
@@ -50,6 +50,6 @@ describe "Entry", ->
     expect(p.getChild("A").children.length).toEqual(1)
 
     B.Receiver="newA"
-    p.updateChildrenForFile({'newA':A, 'B': B}, "fileA")
+    p.updateChildrenForFile([A, B], "fileA")
     expect(p.getChild("newA").children.length).toEqual(1)
     expect(p.hasChild("A")).toBeFalsy()

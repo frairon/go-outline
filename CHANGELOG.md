@@ -1,3 +1,9 @@
+## 0.6.0 - name clashes fixed
+ * allow multiple symbols with same name in a file (issue #48)
+ * show interface functions (issue #42)
+ * configurable executable (issue #33)
+ * applies config changes without restart
+
 ## 0.5.0 - navigation improved
  * file/package view added
  * show parsing errors

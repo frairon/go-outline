@@ -11,9 +11,14 @@ module.exports =
     showVariables:
       type: 'boolean'
       default: true
-    currentView:
+    showInterfaces:
+      type: 'boolean'
+      default: true
+    viewMode:
       type: 'string'
       default: 'file'
+      description: "Display the whole package or just the current file"
+      enum: ['package', 'file']
     showTree:
       type: 'boolean'
       default: true
@@ -23,8 +28,10 @@ module.exports =
     linkFile:
       type: 'boolean'
       default: true
-
-
+      description: 'When disabled, the outline is not synchronized with the active file'
+    parserExecutable:
+      type: 'string'
+      default: 'go-outline-parser'
 
   goOutlineView: null
 
@@ -38,3 +45,4 @@ module.exports =
 
   deactivate: ->
     @goOutlineView.destroy()
+    @goOutlineView = null

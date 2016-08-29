@@ -10,9 +10,14 @@ helpers = require './helpers'
 {CompositeDisposable, Emitter} = require 'event-kit'
 
 
-
 module.exports = class Folder
-  constructor: (@path) ->
+
+  # static variable makes sure we only show the warning
+  # about using an old browser only once
+  @oldParserWarningShown: false
+  @parserErrorShown: false
+
+  constructor: (@path, @getParserExecutable) ->
     @packages = {}
 
     @fileStats = {}
@@ -94,17 +99,20 @@ module.exports = class Folder
 
   reparseFile: (filePath)->
     out = []
+    parserExecutable = @getParserExecutable()
     promise = new Promise((resolve, reject) =>
       proc = new BufferedProcess({
-        command: 'go-outline-parser',
+        command: parserExecutable,
         args: ['-f', filePath],
         stdout: (data) =>
           out.push(data)
-
         exit: (code) =>
           resolve(code)
         })
-      proc.onWillThrowError((c) ->
+
+      proc.onWillThrowError((c) =>
+        resolve(c)
+        @showParserError(c.error)
         c.handle()
       )
 
@@ -114,6 +122,7 @@ module.exports = class Folder
 
       try
         @updateFolder(out.join("\n"))
+
       catch error
         console.log "Error creating outline from parser-output", error, out
       finally
@@ -121,9 +130,30 @@ module.exports = class Folder
 
     return promise
 
+  showParserError: (error) =>
+    return if Folder.parserErrorShown
+
+    atom.notifications.addError("Error executing go-outline-parser", {
+      detail: error + "\nExecutable not found?",
+      dismissable:true,
+    })
+    Folder.parserErrorShown=true
+
   updateFolder: (parserOutput) ->
     parsed = JSON.parse parserOutput
-    console.log(parsed)
+
+    if parsed.Entries not instanceof Array
+
+      # for the first time this happens per session
+      # show a warning to update go-outline-parser
+      if not Folder.oldParserWarningShown
+        atom.notifications.addInfo("Update go-outline-parser",
+                                      {detail: "It seems like you're using an outdated version of go-outline.\nUpdate to get more features/bugfixes.",
+                                      dismissable: true})
+        Folder.oldParserWarningShown = true
+
+      # convert it to a list anyway to be backwards compatible
+      parsed.Entries = _.values(parsed.Entries)
     file = parsed.Filename
     packageName = parsed.Packagename
 

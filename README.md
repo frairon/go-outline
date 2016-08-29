@@ -7,7 +7,7 @@ Simple outline for golang files.
 It shows all following symbols contained in the whole package:
 * global variables/constants
 * global functions
-* types
+* types, interfaces
 * functions with receivers
 
 If a file changes, the tree will be updated.
