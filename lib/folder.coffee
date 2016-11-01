@@ -142,6 +142,10 @@ module.exports = class Folder
   updateFolder: (parserOutput) ->
     parsed = JSON.parse parserOutput
 
+    # maybe the file does not have any entries? Ignore it
+    if !parsed.Entries?
+      return
+      
     if parsed.Entries not instanceof Array
 
       # for the first time this happens per session
