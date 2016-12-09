@@ -487,7 +487,7 @@ class GoOutlineView extends View
       else
         d.name
     )
-    expanderIcon.on("mouseup", (d)=>
+    expanderIcon.on("click", (d)=>
       if @jumpToEntry(d)
         d3.event.stopPropagation()
 
@@ -535,7 +535,7 @@ class GoOutlineView extends View
 
     createChildren = (selection, recurse) ->
       item = selection.append('li')
-      item.on("mouseup", (d)->
+      item.on("click", (d)->
         d.expanded = !d.expanded
         d3.event.stopPropagation()
         updateExpanderIcon.apply(this, [d])
