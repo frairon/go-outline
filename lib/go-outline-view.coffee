@@ -345,6 +345,8 @@ class GoOutlineView extends View
   detach: ->
     console.log("destroying panel")
     @panel.destroy()
+    @panel = null
+
 
 
   onActivePaneChange: (item) ->
