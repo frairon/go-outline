@@ -358,11 +358,11 @@ class GoOutlineView extends View
 
 
   onSideToggled: (newValue) ->
-    @closest('.view-resizer')[0].dataset.showOnRightSide = newValue
     @showOnRightSide = newValue
+    @element.dataset.showOnRightSide = @showOnRightSide
     if @isVisible()
       @detach()
-      @attach()
+      @show()
 
 
   getPath: ->
