@@ -6,7 +6,6 @@ PathWatcher = require 'pathwatcher'
 
 Package = require './package'
 
-helpers = require './helpers'
 {CompositeDisposable, Emitter} = require 'event-kit'
 
 

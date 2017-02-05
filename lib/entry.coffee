@@ -1,4 +1,4 @@
-{basename} = require './helpers'
+path = require('path')
 _ = require 'underscore-plus'
 module.exports = class Entry
 
@@ -32,7 +32,7 @@ module.exports = class Entry
 
   getTitle: ->
     if @fileDef? and @fileLine?
-      basename(@fileDef)+":"+@fileLine
+      path.basename(@fileDef)+":"+@fileLine
 
     if @isImplicitParent()
       @name + " (definition not found)"

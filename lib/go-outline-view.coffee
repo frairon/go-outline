@@ -1,8 +1,9 @@
 $ = $$ = fs = _s = Q = _ = null
 
+path = require('path')
+
 {$, View, TextEditorView} = require 'atom-space-pen-views'
 
-helpers = require './helpers'
 d3 = require 'd3'
 path = require 'path'
 _ = require 'underscore-plus'
@@ -393,8 +394,8 @@ class GoOutlineView extends View
 
   showPkgsForPath:(filePath) ->
 
-    folderPath = helpers.dirname(filePath)
-    file = helpers.basename(filePath)
+    folderPath = path.dirname(filePath)
+    file = path.basename(filePath)
 
     if folderPath == @currentDir
       if @viewMode == "file"
