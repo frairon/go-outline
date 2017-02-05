@@ -35,7 +35,7 @@ class GoOutlineView extends View
                 @li class: '', 'Link go-outline with editor', outlet: 'btnLinkFile'
         @div class: 'go-outline-search', =>
           @subview 'searchField', new TextEditorView({mini: true, placeholderText:'filter'})
-          @div class: 'icon icon-x', outlet: 'btnResetFilter'
+          @div class: 'icon icon-x hidden', outlet: 'btnResetFilter'
         @div class: 'go-outline-status', =>
           @div class: 'icon icon-chevron-up', title: 'collapse all', outlet: 'btnCollapse'
           @div class: 'icon icon-chevron-down', title: 'expand all', outlet: 'btnExpand'
@@ -62,7 +62,7 @@ class GoOutlineView extends View
     else
       $(element).removeClass("selected")
 
-  setButtonVisibility: (element, enabled) ->
+  setButtonVisible: (element, enabled) ->
     if enabled
       $(element).removeClass("hidden")
     else
@@ -145,8 +145,8 @@ class GoOutlineView extends View
 
   updateButtons: ->
     @setOptionActive(@btnShowTree, @showTree)
-    @setButtonVisibility(@btnCollapse, @showTree)
-    @setButtonVisibility(@btnExpand, @showTree)
+    @setButtonVisible(@btnCollapse, @showTree)
+    @setButtonVisible(@btnExpand, @showTree)
     @setOptionActive(@btnShowPrivate, @showPrivate)
     @setOptionActive(@btnShowTests, @showTests)
     @setOptionActive(@btnShowVariables, @showVariables)
@@ -280,7 +280,6 @@ class GoOutlineView extends View
     editorView.addEventListener 'focus', (e) =>
       @searchField.getModel().selectAll()
 
-
   searchBuffer: =>
     @searchField.getModel().getBuffer()
 
@@ -294,6 +293,7 @@ class GoOutlineView extends View
 
   applyFilter: =>
     @filterText = @searchBuffer().getText()
+    @setButtonVisible(@btnResetFilter[0], @filterText.length>0)
     if !@filterText?.length
       @filterText = null
     @scheduleTimeout()
@@ -436,26 +436,7 @@ class GoOutlineView extends View
     if item?.fileDef
       atom.workspace.open(item.fileDef, options).then (editor) =>
         if options.initialLine?
-          editor.scrollToBufferPosition([options.initialLine, options.initialColumn], {center:true}) #markBufferRange(
-          @flash(editor, [[options.initialLine, 0], [options.initialLine, 100]])
-
-
-  flash: (editor, range) ->
-    marker = editor.markBufferRange range,
-      invalidate: 'never'
-      persistent: false
-      maintainHistory: false
-
-    # set flashy class to marker.
-    editor.decorateMarker marker,
-      type: 'line'
-      class: 'go-outline-highlight-line'
-
-    # after timeout, remove the marker
-    setTimeout ->
-      marker.destroy()
-    , 300
-
+          editor.scrollToBufferPosition([options.initialLine, options.initialColumn], {center:true})
 
   currentFolder: ->
     if @currentDir?

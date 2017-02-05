@@ -14,7 +14,7 @@
   "repository": "https://github.com/frairon/go-outline",
   "license": "MIT",
   "engines": {
-    "atom": ">=1.0.0 <2.0.0"
+    "atom": ">=1.13.0 <2.0.0"
   },
   "dependencies": {
     "event-kit": "^1.0.0",
