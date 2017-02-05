@@ -91,6 +91,10 @@ class GoOutlineView extends View
     @filterTimeout = null
     @initializeButtons()
     @handleEvents()
+    
+    atom.workspace.observeTextEditors (editor) =>
+      editor.onDidSave =>
+        @currentPackage().fullReparse()
 
   setParserStatus: (allFiles=[], doneFiles=[], failedFiles=[]) =>
     # updates the parser status indicator badge
