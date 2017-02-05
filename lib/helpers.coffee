@@ -1,9 +1,9 @@
-
+p = require('path')
 
 module.exports = {
   basename: (path) ->
-    return path.replace(/^.*\//, '')
+    return p.basename(path)
 
   dirname: (path) ->
-    return path.replace(/[^\/]+$/, '')
+    return p.dirname(path)
 }
