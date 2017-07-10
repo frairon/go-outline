@@ -478,33 +478,21 @@ class GoOutlineView extends View
 
     )
 
-  filterChildren: (children) =>
-    return _.filter(children, (c) =>
-
-      searcher = (c) -> true
-
-      if @filterText?
-        needles = @filterText.toLowerCase().split(" ")
-        searcher = (c) ->
-          lowName = c.name.toLowerCase()
-          return _.every(needles, (n) ->
-            lowName.indexOf(n) > -1
-            )
-      return (
-            (@showVariables or c.type isnt "variable") and
-            (@showTests or c.type is "package" or not c.isTestEntry()) and
-            (@showInterfaces or c.type isnt "interface") and
-            (@viewMode == "package" or c.fileDef == @getPath() or c.filesUsage.has(@getPath())) and
-            (@showPrivate or c.isPublic) and
-            (!@filterText or searcher(c))
-          )
-    )
-
   showFilteredList: (pkg) =>
     if !pkg?
       console.log "Provided null as package to display. This should not happen"
       return
 
+  createFilterOptions: () =>
+    return {
+      text: @filterText,
+      flat: @flatOutline(),
+      variables: @showVariables,
+      tests: @showTests,
+      interfaces: @showInterfaces,
+      viewMode: @viewMode,
+      private: @showPrivate
+    }
 
   updateSymbolList: (folder) =>
     return unless folder?
@@ -542,7 +530,8 @@ class GoOutlineView extends View
         nonLeafs.each((d) ->
           childList = d3.select(this).append("ol")
           childList.attr({class:'list-tree'})
-          data = if outlineView.flatOutline() then outlineView.filterChildren(d.getChildrenFlat()) else outlineView.filterChildren(d.children)
+
+          data = d.filterChildren(outlineView.getPath(), outlineView.createFilterOptions())
           childSelection = childList.selectAll("li").data(data)
           childSelection.enter().call((s) -> createChildren(s, recurse+1))
         )

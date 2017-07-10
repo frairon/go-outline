@@ -7,7 +7,6 @@ module.exports = class Entry
 
     @type =null
     @fileDef = null
-    @filesUsage = new Set()
     @fileLine = -1
     @fileColumn = -1
     @isPublic = false
@@ -128,6 +127,9 @@ module.exports = class Entry
   usageFiles: ->
     return _.pluck(@children, "fileDef").length
 
+  isUsedInFile: (file) ->
+    return _.some(@children, (c) -> c.fileDef == file)
+
   removeRemainingChildren: (fileName, existingChildren) ->
     i=0
 
@@ -165,3 +167,40 @@ module.exports = class Entry
 
   isImplicitParent: ->
     @hasChildren() and !@fileDef?
+
+
+  filterChildren: (path, options) =>
+    # params:
+    #  path: file path of active file
+    #  options: <object>
+    #     text: filter text
+    #     flat true|false -> return all children flattened
+    #     variables: show variables
+    #     tests: show tests
+    #     interfaces: show interfaces
+    #     viewMode: package|file
+    #     private: show unexported symbols
+    if options?.flat
+      children = @getChildrenFlat()
+    else
+      children = @children
+
+    return _.filter(children, (c) =>
+      searcher = (c) -> true
+
+      if options?.text
+        needles = options.text.toLowerCase().split(" ")
+        searcher = (c) ->
+          lowName = c.name.toLowerCase()
+          return _.every(needles, (n) ->
+            lowName.indexOf(n) > -1
+            )
+      return (
+            (options?.variables or c.type isnt "variable") and
+            (options?.test or c.type is "package" or not c.isTestEntry()) and
+            (options?.interfaces or c.type isnt "interface") and
+            (options?.viewMode == "package" or c.fileDef == path or c.isUsedInFile(path)) and
+            (options?.private or c.isPublic) and
+            (!options?.text or searcher(c))
+          )
+    )

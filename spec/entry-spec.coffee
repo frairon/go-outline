@@ -53,3 +53,41 @@ describe "Entry", ->
     p.updateChildrenForFile([A, B], "fileA")
     expect(p.getChild("newA").children.length).toEqual(1)
     expect(p.hasChild("A")).toBeFalsy()
+
+  it "should filter empty", ->
+    pkg = new Package("test")
+    expect(pkg.filterChildren("file", {})).toHaveLength(0)
+
+  it "should hide privates", ->
+
+    pkg = new Package("test")
+    pkg.updateChildrenForFile([{
+      Name: "test",
+    }], "file")
+
+    expect(pkg.filterChildren("file", {
+      private:false,
+      })).toHaveLength(0)
+
+    expect(pkg.filterChildren("file", {})).toHaveLength(0)
+    expect(pkg.filterChildren("file", {
+      private:true,
+      })).toHaveLength(1)
+  it "should show from implicit symbols from other files", ->
+    pkg = new Package("test")
+    pkg.updateChildrenForFile([{
+      Name: "Test",
+    }], "file")
+
+    pkg.updateChildrenForFile([{
+      Name: "children",
+      Receiver: "Test",
+    }], "otherfile")
+
+    expect(pkg.filterChildren("file", {
+      private:true,
+      })).toHaveLength(1)
+
+    expect(pkg.filterChildren("otherfile", {
+      private:true,
+      })).toHaveLength(1)
