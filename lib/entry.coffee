@@ -197,7 +197,7 @@ module.exports = class Entry
             )
       return (
             (options?.variables or c.type isnt "variable") and
-            (options?.test or c.type is "package" or not c.isTestEntry()) and
+            (options?.tests or c.type is "package" or not c.isTestEntry()) and
             (options?.interfaces or c.type isnt "interface") and
             (options?.viewMode == "package" or c.fileDef == path or c.isUsedInFile(path)) and
             (options?.private or c.isPublic) and

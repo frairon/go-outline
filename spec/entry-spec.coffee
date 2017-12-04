@@ -1,5 +1,6 @@
 Entry = require '../lib/entry'
 Package = require '../lib/package'
+GoOutlineView = require '../lib/go-outline-view'
 
 describe "Entry", ->
   it "should update correctly", ->
@@ -91,3 +92,22 @@ describe "Entry", ->
     expect(pkg.filterChildren("otherfile", {
       private:true,
       })).toHaveLength(1)
+
+  it "should hide and show test-files", ->
+    pkg = new Package("abc")
+    pkg.updateChildrenForFile([{
+      Name: "TestSomething",
+      Type: "function",
+      Public: true,
+    }], "mod_test.go")
+
+    v = new GoOutlineView()
+
+    expect(pkg.filterChildren("mod_test.go", v.createFilterOptions()))
+      .toHaveLength(0)
+
+    # modify the options to show the tests. Now the tests should be visible
+    v.showTests=true
+
+    expect(pkg.filterChildren("mod_test.go", v.createFilterOptions()))
+      .toHaveLength(1)
