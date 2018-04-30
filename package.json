@@ -22,7 +22,6 @@
     "underscore.string": "*",
     "q": "^1.0.1",
     "underscore-plus": "^1.0.0",
-    "pathwatcher": "8.0.1",
     "d3": "3.5.17",
     "atom-utils": ">=0.9.2"
   }
