@@ -444,40 +444,6 @@ class GoOutlineView extends View
     else
       return null
 
-  setEntryIcon: (liItem) ->
-    expanderIcon = liItem.append("span")
-
-    entryStyleClasses =
-      package:"icon icon-file-directory"
-      variable:"icon icon-mention variable"
-      type: "icon name type go icon-link entity"
-      func: "icon icon-primitive-square entity name function"
-      interface: "icon icon-list-unordered entity name entity"
-
-    for entryType, styleClasses of entryStyleClasses
-      expanderIcon.filter((d)-> d.type is entryType).classed(styleClasses, true)
-
-    currentPath = @getPath()
-    if @viewMode == 'file'
-      expanderIcon.filter((d) -> d.type != "package" and d.fileDef != currentPath).classed("implicit-parent", true)
-    else if @viewMode == 'package'
-      expanderIcon.filter((d) -> d.type != "package" and d.isImplicitParent()).classed("nonexistent-parent", true)
-    #else
-    #  expanderIcon.filter((d) -> d.type != "package" and d.fileDef == currentPath).classed("current-file-symbol", true)
-
-    expanderIcon.text((d)=>
-      if @flatOutline()
-        d.getIdentifier()
-      else
-        d.name
-    )
-    expanderIcon.on("click", (d)=>
-      if @jumpToEntry(d)
-        d3.event.stopPropagation()
-
-
-    )
-
   showFilteredList: (pkg) =>
     if !pkg?
       console.log "Provided null as package to display. This should not happen"
@@ -499,11 +465,41 @@ class GoOutlineView extends View
 
     outlineView = @
 
+    setEntryIcon = (liItem) ->
+      expanderIcon = liItem.append("span")
+
+      entryStyleClasses =
+        package:"icon icon-file-directory"
+        variable:"icon icon-mention variable"
+        field:"icon icon-dash field"
+        type: "icon name type go icon-list-unordered entity"
+        func: "icon icon-code entity name function"
+        interface: "icon icon-list-unordered entity name entity"
+
+      for entryType, styleClasses of entryStyleClasses
+        expanderIcon.filter((d)-> d.type is entryType).classed(styleClasses, true)
+
+      currentPath = outlineView.getPath()
+      if @viewMode == 'file'
+        expanderIcon.filter((d) -> d.type != "package" and d.fileDef != currentPath).classed("implicit-parent", true)
+      else if @viewMode == 'package'
+        expanderIcon.filter((d) -> d.type != "package" and d.isImplicitParent()).classed("nonexistent-parent", true)
+
+      expanderIcon.text((d)=>
+        if outlineView.flatOutline()
+          d.getIdentifier()
+        else
+          d.name
+      )
+      expanderIcon.on("click", (d)=>
+        if outlineView.jumpToEntry(d)
+          d3.event.stopPropagation()
+      )
+
     updateExpanderIcon = (d)->
       classed =
         'collapsed': !d.expanded
       d3.select(this).classed(classed).attr("title", d.getTitle())
-
 
     createChildren = (selection, recurse) ->
       item = selection.append('li')
@@ -516,16 +512,15 @@ class GoOutlineView extends View
       # apply initially
       item.each(updateExpanderIcon)
 
-
       if !outlineView.flatOutline() or recurse == 0
         nonLeafs = item.filter((d) -> d.children.length > 0)
         nonLeafs.classed("list-nested-item", true)
         nonLeafContent = nonLeafs.append("div").attr({class:"list-item"})
-        outlineView.setEntryIcon(nonLeafContent)
+        setEntryIcon(nonLeafContent)
 
         leafs = item.filter((d) -> d.children.length == 0)
         leafs.classed("list-item", true)
-        outlineView.setEntryIcon(leafs)
+        setEntryIcon(leafs)
 
         nonLeafs.each((d) ->
           childList = d3.select(this).append("ol")
@@ -537,7 +532,7 @@ class GoOutlineView extends View
         )
       else
         item.classed("list-item", true)
-        outlineView.setEntryIcon(item)
+        setEntryIcon(item)
 
       updateExpand = ->
         item.each((d)->
