@@ -1,7 +1,7 @@
 {
   "name": "go-outline",
-  "main": "./lib/go-outline",
-  "version": "0.6.7",
+  "main": "./lib/main",
+  "version": "0.6.8",
   "description": "Displays an outline of symbols for Golang",
   "keywords": [
     "go",
@@ -20,9 +20,9 @@
     "event-kit": "^1.0.0",
     "atom-space-pen-views": "^2.0.0",
     "underscore.string": "*",
+    "etch": "^0.12.6",
     "q": "^1.0.1",
     "underscore-plus": "^1.0.0",
-    "pathwatcher": "8.0.1",
     "d3": "3.5.17",
     "atom-utils": ">=0.9.2"
   }

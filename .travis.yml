@@ -1,6 +1,5 @@
 # Installed for linting the project
-language: node_js
-node_js: "6"
+language: generic
 
 notifications:
   email:
@@ -21,6 +20,13 @@ os:
   - linux
   - osx
 
+branches:
+  only:
+    - master
+    - remove-pathwatcher-coffeescript
+
+dist: trusty
+
 env:
   global:
     - APM_TEST_PACKAGES="underscore.string underscore-plus"
@@ -37,7 +43,3 @@ addons:
     - git
     - libgnome-keyring-dev
     - fakeroot
-
-branches:
-  only:
-    - master
