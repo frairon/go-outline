@@ -316,7 +316,10 @@ class GoOutlineView extends View
     @width(@contentElement()?.outerWidth())
 
   destroy: ->
+    @saveSettings()
+    @detach()
 
+  saveSettings: ->
     atom.config.set 'go-outline.showTests', @showTests
     atom.config.set 'go-outline.showPrivates', @showPrivate
     atom.config.set 'go-outline.showTree', @showTree
@@ -324,8 +327,6 @@ class GoOutlineView extends View
     atom.config.set 'go-outline.showInterfaces', @showInterfaces
     atom.config.set 'go-outline.viewMode', @viewMode
     atom.config.set 'go-outline.linkFile', @linkFile
-
-    @detach()
 
   toggle: ->
     if @isVisible()
@@ -345,6 +346,7 @@ class GoOutlineView extends View
 
   detach: ->
     console.log("destroying panel")
+    @saveSettings()
     @panel.destroy()
     @panel = null
 
@@ -450,9 +452,10 @@ class GoOutlineView extends View
     entryStyleClasses =
       package:"icon icon-file-directory"
       variable:"icon icon-mention variable"
-      type: "icon name type go icon-link entity"
-      func: "icon icon-primitive-square entity name function"
-      interface: "icon icon-list-unordered entity name entity"
+      field:"icon icon-dash field"
+      type: "icon name type go icon-list-unordered entity"
+      func: "icon icon-code entity name function"
+      interface: "icon icon-three-bars entity name entity"
 
     for entryType, styleClasses of entryStyleClasses
       expanderIcon.filter((d)-> d.type is entryType).classed(styleClasses, true)

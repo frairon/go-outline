@@ -122,7 +122,11 @@ module.exports = class Entry
     switch @type
       when "variable" then 0
       when "type" then 1
-      when "func" then 2
+      when "field" then 2
+      when "func" then 3
+      when "interface" then 1
+      else 10 # if we dont't know, sort it to the back.
+
 
   usageFiles: ->
     return _.pluck(@children, "fileDef").length
